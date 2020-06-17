@@ -1,0 +1,95 @@
+/** BASE **/
+html,
+body,
+#root,
+#app {
+  height: 100%;
+}
+
+/** PHOTO STREAM **/
+.month {
+  margin: 2em;
+}
+
+.photo {
+  height: 10em;
+  width: 10em;
+  border-radius: 10px;
+  margin: 0.5em;
+}
+
+.photo1 {
+  background: lavender;
+}
+
+.photo2 {
+  background: lightblue;
+}
+
+.photo3 {
+  background: lightcoral;
+}
+
+/** LOGIN AND REGISTRATION **/
+#loginBody,
+#registerBody {
+  height: 100%;
+  display: -ms-flexbox;
+  display: -webkit-box;
+  display: flex;
+  -ms-flex-align: center;
+  -ms-flex-pack: center;
+  -webkit-box-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  justify-content: center;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  background-color: #f5f5f5;
+}
+
+#loginForm,
+#registerForm {
+  width: 100%;
+  max-width: 330px;
+  padding: 15px;
+  margin: 0 auto;
+}
+
+#loginForm .checkbox {
+  font-weight: 400;
+}
+
+#loginForm .form-control,
+#registerForm .form-control {
+  position: relative;
+  box-sizing: border-box;
+  height: auto;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#loginForm .form-control:focus,
+#registerForm .form-control:focus {
+  z-index: 2;
+}
+
+#loginForm input[type="email"],
+#registerForm input[type="email"] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+#loginForm input[input="password"],
+#registerForm input[input="password"] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/** ERROR MESSAGE **/
+
+#errorAlert {
+  margin: 0 10rem 10rem 10rem;
+}
