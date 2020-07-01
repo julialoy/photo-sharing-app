@@ -52,7 +52,8 @@ class Signin extends Component {
             email: email,
             password: password
           }
-        },
+        }, 
+        {withCredentials: true},
       )
       .then(response => {
         if (response.data.logged_in) {
@@ -91,6 +92,7 @@ class Signin extends Component {
             </label>
           </div>
           <button className="btn btn-lg btn-dark btn-block" type="submit" id="loginSubmit">Log in</button>
+          <p>No account? <a href="/register">Register!</a></p>
         </form>
       </div>
     )

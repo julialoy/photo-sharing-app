@@ -112,6 +112,7 @@ class Register extends Component {
             required
           />
           <button id="registerSubmit" className="btn btn-lg btn-dark btn-block" type="submit">Register</button>
+          <p>Already have an account? <a href="/login">Log in.</a></p>
         </form>
       </div>
     )

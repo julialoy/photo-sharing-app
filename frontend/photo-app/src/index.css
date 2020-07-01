@@ -6,6 +6,18 @@ body,
   height: 100%;
 }
 
+/** NAV BAR **/
+
+
+.nav-link {
+  border: none !important;
+}
+
+.nav-link:active,
+.nav-link:focus {
+  outline: none !important;
+}
+
 /** PHOTO STREAM **/
 .month {
   margin: 2em;

@@ -8,18 +8,20 @@ class Home extends Component {
 
   static propTypes = {
     loggedInStatus: PropTypes.bool.isRequired,
-    currentUser: PropTypes.string.isRequired
+    currentUser: PropTypes.string.isRequired,
+    handleSuccessfulLogOut: PropTypes.func
   };
 
   render() {
         
     const {
       loggedInStatus,
-      currentUser
+      currentUser,
+      handleSuccessfulLogOut
     } = this.props;
 
     console.log("LOGGED IN?", loggedInStatus);
-    const headerElement = <Header loggedInStatus={loggedInStatus} currentUser={currentUser} />
+    const headerElement = <Header loggedInStatus={loggedInStatus} currentUser={currentUser} handleSuccessfulLogOut={handleSuccessfulLogOut} />
     const errorElement =  <Error />
 
     return (

@@ -1,39 +1,59 @@
+import time
 import asyncio
-import io
 import json
 import sqlite3
-from pathlib import Path
-from typing import Awaitable, Callable
+from typing import Any, Awaitable, Callable, Dict
 from uuid import uuid4
 
-import aiohttp_session
-import aiosqlite
+import aiohttp
+from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
 
 from db import DATABASE
 
 db = DATABASE
 router = web.RouteTableDef()
-# _WebHanlder = Callable[[web.Request], Awaitable[web.StreamResponse]]
+_WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+
+
+def require_login(func: _WebHandler) -> _WebHandler:
+    func.__require_login__ = True   # type: ignore
+    return func
+
+
+def image_to_db(filename):
+    """Add uploaded image information to db"""
+    with sqlite3.connect(db) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+        INSERT INTO images (user_key, album_key, child_key, filename, date_taken)
+        VALUES (?, ?, ?, ?, ?)
+        """)
+        conn.commit()
+
+
+
+@web.middleware
+async def check_login(request: web.Request,
+                      handler: _WebHandler) -> web.StreamResponse:
+    require_login = getattr(handler, "__require_login__", False)
+    session = await get_session(request)
+    username = session.get("username")
+    print(f"IN MIDDLEWARE GET SESSION: {session}")
+    if require_login:
+        if not username or username is None:
+            print(f"No username in session: {session}")
+    return await handler(request)
 #
-#
-# def require_login(func: _WebHanlder) -> _WebHanlder:
-#     func.__require_login__ = True   # type: ignore
-#     return func
-#
-#
-# @web.middleware
-# async def check_login(request: web.Request,
-#                       handler: _WebHanlder) -> web.StreamResponse:
-#     require_login = getattr(handler, "__require_login__", False)
-#     session = await aiohttp_session.get_session(request)
+# @asyncio.coroutine
+# async def request_handler(request):
+#     async with request.app['MY_PERSISTENT_SESSION'].get() as resp:
+
+
+# async def username_ctx_processor(request: web.Request) -> Dict[str, Any]:
+#     session = await get_session(request)
 #     username = session.get("username")
-#     if require_login:
-#         if not username:
-#             raise web.HTTPSeeOther(location="/login")
-#     return await handler(request)
-
-
+#     return {"username": username}
 @asyncio.coroutine
 async def json_handler(self, *, loads=json.loads):
     body = await self.text()
@@ -42,8 +62,12 @@ async def json_handler(self, *, loads=json.loads):
 
 @asyncio.coroutine
 @router.get("/")
+# @require_login
 async def index_handler(request: web.Request) -> web.Response:
-    session = await aiohttp_session.get_session(request)
+    # session = request.app['MY_PERSISTENT_SESSION']
+    session = await get_session(request)
+    username = session.get("username")
+    print(f"USERNAME: {username}")
     print(f"SESSION: {session}")
     return web.Response(
         text="Hello from the Index!",
@@ -56,8 +80,7 @@ async def index_handler(request: web.Request) -> web.Response:
 @router.post("/login")
 async def login_handler(request: web.Request) -> web.json_response:
     print("FIND USER AND LOG IN")
-    session = await aiohttp_session.get_session(request)
-
+    session = await new_session(request)
     request_json = await json_handler(request)
     username = request_json['user']['email']
     password = request_json['user']['password']
@@ -86,10 +109,7 @@ async def login_handler(request: web.Request) -> web.json_response:
                 session["username"] = username
                 session["auth_token"] = auth_token
                 session["logged_in"] = True
-
-                # print(f"USERNAME FROM SESSION: {session.get('username')}")
-                # print(f"AUTH_TOKEN FROM SESSION: {session.get('auth_token')}")
-                # print(f"{session}")
+                print(f"{session}")
 
                 cur.execute("""
                 UPDATE users
@@ -144,19 +164,51 @@ async def registration_handler(request: web.Request) -> web.json_response:
 
 @asyncio.coroutine
 @router.post("/logged_in")
+# @require_login
 async def logged_in_handler(request: web.Request) -> web.json_response:
-    session = await aiohttp_session.get_session(request)
-    data = {'is_logged_in': False}
+    data = {"username": None, "is_logged_in": False}
+    session = await get_session(request)
     print(f"LOGGED IN? {session}")
+    valid_auth_token = session.get("auth_token")
+    if valid_auth_token:
+        data["is_logged_in"] = True
+        data["username"] = session["username"]
     return web.json_response(data)
 
 
 @asyncio.coroutine
 @router.get("/logout")
-async def logout_handler(request: web.Request) -> web.Response:
-    # Fill in
-    return web.Response(
-        text="Logged out successfully",
-        headers={
-            "X-Custom-Server-Header": "Custom data",
-        })
+@require_login
+async def logout_handler(request: web.Request) -> web.json_response:
+    session = await get_session(request)
+    username = session.get("username")
+    auth_token = session.get("auth_token")
+    print(f"LOG OUT {session}")
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            UPDATE users
+            SET auth_token = (?)
+            WHERE auth_token = (?)
+            AND username = (?)
+            """, (None, auth_token, username))
+            conn.commit()
+        session["username"] = None
+        session["auth_token"] = None
+        session["logged_in"] = False
+        data = {"log_out_successful": True}
+    except sqlite3.DatabaseError as err:
+        print(f"Something went wrong: {err}")
+        data = {"log_out_successful": False}
+
+    print(f"SESSION AFTER LOG OUT: {session}")
+    return web.json_response(data)
+
+
+@asyncio.coroutine
+@router.post("/upload")
+async def upload_handler():
+    # Need logic to get files from form
+    pass

@@ -18,11 +18,13 @@ class App extends Component {
 
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
+    this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
   }
 
   checkLoginStatus() {
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
+      console.log(response.data)
       console.log(response.data.is_logged_in);
       if (response.data.is_logged_in && !this.state.current_user_state) {
         this.handleSuccessfulAuth(response.data);
@@ -49,6 +51,14 @@ class App extends Component {
     });
   }
 
+  handleSuccessfulLogOut(data) {
+    this.setState({
+      current_user_id: null,
+      current_user_username: "",
+      current_user_state: data.log_out_successful
+    });
+  }
+
   render() { 
     return (
       // <div id="app">
@@ -58,7 +68,7 @@ class App extends Component {
               exact
               path={"/"}
               render={props => (
-                <Home {...props} currentUser={this.state.current_user_username} loggedInStatus={this.state.current_user_state} />
+                <Home {...props} handleSuccessfulLogOut={this.handleSuccessfulLogOut} currentUser={this.state.current_user_username} loggedInStatus={this.state.current_user_state} />
               )}
             />
             <Route 
