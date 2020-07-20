@@ -1,17 +1,20 @@
-import time
+import os
+from pathlib import Path
+from datetime import date
 import asyncio
 import json
 import sqlite3
-from typing import Any, Awaitable, Callable, Dict
+from typing import Awaitable, Callable
 from uuid import uuid4
 
-import aiohttp
 from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
+import PIL.Image
 
 from db import DATABASE
 
 db = DATABASE
+BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
@@ -21,16 +24,15 @@ def require_login(func: _WebHandler) -> _WebHandler:
     return func
 
 
-def image_to_db(filename):
+def image_to_db(user_id, album_id, child_id, filename, image_date) -> None:
     """Add uploaded image information to db"""
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute("""
         INSERT INTO images (user_key, album_key, child_key, filename, date_taken)
         VALUES (?, ?, ?, ?, ?)
-        """)
+        """, (user_id, album_id, child_id, filename, image_date))
         conn.commit()
-
 
 
 @web.middleware
@@ -39,21 +41,12 @@ async def check_login(request: web.Request,
     require_login = getattr(handler, "__require_login__", False)
     session = await get_session(request)
     username = session.get("username")
-    print(f"IN MIDDLEWARE GET SESSION: {session}")
     if require_login:
         if not username or username is None:
             print(f"No username in session: {session}")
     return await handler(request)
-#
-# @asyncio.coroutine
-# async def request_handler(request):
-#     async with request.app['MY_PERSISTENT_SESSION'].get() as resp:
 
 
-# async def username_ctx_processor(request: web.Request) -> Dict[str, Any]:
-#     session = await get_session(request)
-#     username = session.get("username")
-#     return {"username": username}
 @asyncio.coroutine
 async def json_handler(self, *, loads=json.loads):
     body = await self.text()
@@ -62,9 +55,8 @@ async def json_handler(self, *, loads=json.loads):
 
 @asyncio.coroutine
 @router.get("/")
-# @require_login
+@require_login
 async def index_handler(request: web.Request) -> web.Response:
-    # session = request.app['MY_PERSISTENT_SESSION']
     session = await get_session(request)
     username = session.get("username")
     print(f"USERNAME: {username}")
@@ -105,8 +97,8 @@ async def login_handler(request: web.Request) -> web.json_response:
                 # This will require user to log back in
                 auth_token = uuid4()
                 auth_token = auth_token.hex
-                # print(f"AUTH_TOKEN TYPE: {type(auth_token)}")
                 session["username"] = username
+                session["user_id"] = selected_user[0]
                 session["auth_token"] = auth_token
                 session["logged_in"] = True
                 print(f"{session}")
@@ -164,7 +156,6 @@ async def registration_handler(request: web.Request) -> web.json_response:
 
 @asyncio.coroutine
 @router.post("/logged_in")
-# @require_login
 async def logged_in_handler(request: web.Request) -> web.json_response:
     data = {"username": None, "is_logged_in": False}
     session = await get_session(request)
@@ -183,6 +174,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
     auth_token = session.get("auth_token")
+    user_id = session.get("user_id")
     print(f"LOG OUT {session}")
 
     try:
@@ -195,6 +187,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
             AND username = (?)
             """, (None, auth_token, username))
             conn.commit()
+        session["user_id"] = None
         session["username"] = None
         session["auth_token"] = None
         session["logged_in"] = False
@@ -209,6 +202,57 @@ async def logout_handler(request: web.Request) -> web.json_response:
 
 @asyncio.coroutine
 @router.post("/upload")
-async def upload_handler():
-    # Need logic to get files from form
-    pass
+@require_login
+async def upload_handler(request: web.Request) -> web.json_response:
+    data = {"upload_successful": False, "error": None}
+    session = await get_session(request)
+    current_user = session['user_id']
+    image_data = await request.post()
+    counter = 0
+    end_count = len(image_data)
+    while counter < end_count:
+        key = 'image' + str(counter)
+        filename = image_data[key].filename
+        image_file = image_data[key].file
+        try:
+            with sqlite3.connect(db) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                INSERT INTO images (user_id, filename)
+                VALUES (?, ?)
+                """, (current_user, filename))
+                conn.commit()
+        except sqlite3.DatabaseError as err:
+            data['upload_successful'] = False
+            data['error'] = err
+            print(f"Could not save image: {err}")
+            return web.json_response(data)
+        else:
+            with open(os.path.join('static/images/', filename), 'wb') as f:
+                image_contents = image_file.read()
+                f.write(image_contents)
+
+            # Get exif
+            img = PIL.Image.open(image_file)
+            exif_data = img.getexif()
+            creation_date = exif_data.get(36867)
+
+            if creation_date is None:
+                creation_date = date.today()
+
+            with sqlite3.connect(db) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                UPDATE images
+                SET date_taken=(?)
+                WHERE user_id=(?)
+                AND filename=(?)
+                """, (creation_date, current_user, filename))
+                conn.commit()
+
+            print(f"creation_date for {filename}: {creation_date}")
+            data['upload_successful'] = True
+
+        counter += 1
+
+    return web.json_response(data)

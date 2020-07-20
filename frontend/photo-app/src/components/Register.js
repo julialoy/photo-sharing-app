@@ -38,9 +38,6 @@ class Register extends Component {
             password: password
           }
         },
-        // Is this necessary for aiohttp backend?
-        // Tutorial says this tells Rails API to set cookie
-        // Unclear if needed for aiohttp
         { withCredentials: true }
       )
       .then(response => {

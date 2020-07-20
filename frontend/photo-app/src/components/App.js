@@ -4,7 +4,8 @@ import Home from './Home';
 import Register from './Register';
 import Signin from './Signin';
 import axios from 'axios';
-
+import Upload from './Upload';
+import Logout from './Logout';
 
 class App extends Component {
   constructor(props) {
@@ -19,6 +20,7 @@ class App extends Component {
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
+    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   checkLoginStatus() {
@@ -59,6 +61,10 @@ class App extends Component {
     });
   }
 
+  handleFileUpload(filenames) {
+    console.log(filenames);
+  }
+
   render() { 
     return (
       // <div id="app">
@@ -83,6 +89,20 @@ class App extends Component {
               path={"/login"}
               render={props => (
                 <Signin {...props} handleSuccessfulAuth={this.handleSuccessfulAuth} />
+              )}
+            />
+            <Route
+              exact
+              path={"/upload"}
+              render={props => (
+                <Upload {...props} handleFileUpload={this.handleFileUpload} />
+              )}
+            />
+            <Route 
+              exact
+              path={"/logout"}
+              render={props => (
+                <Logout {...props} currentUser={this.state.current_user_username} handleSuccessfulLogOut={this.handleSuccessfulLogOut} />
               )}
             />
           </Switch>

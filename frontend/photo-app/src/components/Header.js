@@ -1,30 +1,24 @@
 import React, { Component } from 'react';
 import { withRouter } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import Logout from './Logout';
-import Settings from './UserSettings';
-import Activity from './Activity';
-import Upload from './Upload';
-import Filter from './Filter';
 
 class Header extends Component {
   constructor(props) {
     super(props);
 
   }
-
+  
   static propTypes = {
     loggedInStatus: PropTypes.bool,
     currentUser: PropTypes.string,
-    error: PropTypes.string,
-    handleSuccessfulLogOut: PropTypes.func
+    handleLogout: PropTypes.func
   };
 
   
   render() {
     const {
       currentUser,
-      handleSuccessfulLogOut
+      handleLogout
     } = this.props;
     return (
       <header>
@@ -37,26 +31,21 @@ class Header extends Component {
         </button>
         <div className="collapse navbar-collapse ml-auto" id="navbarSupportedContent">
           <ul className="navbar-nav mr-auto">
-{/*            <li className="nav-item">
-              <a className="nav-link">Filter</a>
+           <li className="nav-item">
+              <a href="/filter" className="nav-link">Filter</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link">Upload</a>
+              <a href="/upload" className="nav-link">Upload</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link">Activity</a>
+              <a href="/activity" className="nav-link">Activity</a>
             </li>
             <li className="nav-item">
-              <a className="nav-link">Settings</a>
+              <a href="/settings" className="nav-link">Settings</a>
             </li>
-             <li className="nav-item">
-              <a className="nav-link">Log out</a>
-            </li> */}
-            <Filter />
-            <Upload />
-            <Activity />
-            <Settings />
-            <Logout currentUser={currentUser} handleSuccessfulLogOut={handleSuccessfulLogOut} />
+            <li>
+              <a href="/logout" className="nav-link" onClick={handleLogout}>Log Out</a>
+            </li>
           </ul>
         </div>
       </nav>
