@@ -1,9 +1,10 @@
 import React, { Component } from "react";
-import { withRouter } from "react-router-dom";
+import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
 import Error from "./Error";
 import Header from "./Header";
+import Upload from "./Upload";
 
 class Home extends Component {
   constructor(props) {
@@ -11,6 +12,7 @@ class Home extends Component {
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
+    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   static propTypes = {
@@ -43,6 +45,10 @@ class Home extends Component {
       .catch(err => console.log("LOGOUT ERROR: ", err));
   }
 
+  handleFileUpload(filenames) {
+    console.log(filenames);
+  }
+
   render() {
         
     const {
@@ -55,9 +61,52 @@ class Home extends Component {
     const errorElement =  <Error />
 
     return (
-      <div id="index-div">
-        {loggedInStatus ?  headerElement : errorElement}
-      </div>
+      <BrowserRouter>
+        <div id="index-div">
+          {/* <div id="header-div">
+            {loggedInStatus ?  headerElement : errorElement}
+          </div> */}
+          <header>
+          <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <div className="link-group">
+              <a className="navbar-brand">Welcome, {currentUser}</a>
+            </div>
+            <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+              <span className="navbar-toggler-icon"></span>
+            </button>
+            <div className="collapse navbar-collapse ml-auto" id="navbarSupportedContent">
+              <ul className="navbar-nav mr-auto">
+              <li className="nav-item">
+                  <a href="/filter" className="nav-link">Filter</a>
+                </li>
+                <li className="nav-item">
+                  <Link to="/upload" className="nav-link">Upload</Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/activity" className="nav-link">Activity</Link>
+                </li>
+                <li className="nav-item">
+                  <Link to="/settings" className="nav-link">Settings</Link>
+                </li>
+                <li>
+                  <Link to="/logout" className="nav-link" onClick={this.handleLogout}>Log Out</Link>
+                </li>
+              </ul>
+            </div>
+          </nav>
+          </header>
+        <Switch>
+          <Route 
+            path={"/upload"}
+            render={props => (
+              <Upload {...props} handleFileUpload={this.handleFileUpload} />
+            )}
+          />
+        </Switch>
+        </div>
+      </BrowserRouter>
+
+
     )
   }
 }

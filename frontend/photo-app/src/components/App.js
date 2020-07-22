@@ -20,7 +20,6 @@ class App extends Component {
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
-    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   checkLoginStatus() {
@@ -61,9 +60,7 @@ class App extends Component {
     });
   }
 
-  handleFileUpload(filenames) {
-    console.log(filenames);
-  }
+
 
   render() { 
     return (
@@ -91,13 +88,13 @@ class App extends Component {
                 <Signin {...props} handleSuccessfulAuth={this.handleSuccessfulAuth} />
               )}
             />
-            <Route
+{/*             <Route
               exact
               path={"/upload"}
               render={props => (
                 <Upload {...props} handleFileUpload={this.handleFileUpload} />
               )}
-            />
+            /> */}
             <Route 
               exact
               path={"/logout"}
