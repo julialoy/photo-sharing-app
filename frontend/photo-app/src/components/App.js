@@ -4,7 +4,6 @@ import Home from './Home';
 import Register from './Register';
 import Signin from './Signin';
 import axios from 'axios';
-import Upload from './Upload';
 import Logout from './Logout';
 
 class App extends Component {
@@ -64,7 +63,6 @@ class App extends Component {
 
   render() { 
     return (
-      // <div id="app">
         <BrowserRouter>
           <Switch>
             <Route
@@ -88,13 +86,6 @@ class App extends Component {
                 <Signin {...props} handleSuccessfulAuth={this.handleSuccessfulAuth} />
               )}
             />
-{/*             <Route
-              exact
-              path={"/upload"}
-              render={props => (
-                <Upload {...props} handleFileUpload={this.handleFileUpload} />
-              )}
-            /> */}
             <Route 
               exact
               path={"/logout"}
@@ -104,7 +95,6 @@ class App extends Component {
             />
           </Switch>
         </BrowserRouter>
-      // </div>
     );
   }
 }

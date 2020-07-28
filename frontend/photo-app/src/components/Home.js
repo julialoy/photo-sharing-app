@@ -1,9 +1,7 @@
 import React, { Component } from "react";
-import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
+import { withRouter, BrowserRouter, Link, Switch, Redirect, Route } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
-import Error from "./Error";
-import Header from "./Header";
 import Upload from "./Upload";
 
 class Home extends Component {
@@ -12,7 +10,6 @@ class Home extends Component {
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
-    this.handleFileUpload = this.handleFileUpload.bind(this);
   }
 
   static propTypes = {
@@ -45,10 +42,6 @@ class Home extends Component {
       .catch(err => console.log("LOGOUT ERROR: ", err));
   }
 
-  handleFileUpload(filenames) {
-    console.log(filenames);
-  }
-
   render() {
         
     const {
@@ -57,15 +50,14 @@ class Home extends Component {
     } = this.props;
 
     console.log("LOGGED IN?", loggedInStatus);
-    const headerElement = <Header loggedInStatus={loggedInStatus} currentUser={currentUser} handleLogout={this.handleLogout} />
-    const errorElement =  <Error />
+
+/*    if (!loggedInStatus) {
+      return (<Redirect to="/login" />);
+    } */
 
     return (
       <BrowserRouter>
         <div id="index-div">
-          {/* <div id="header-div">
-            {loggedInStatus ?  headerElement : errorElement}
-          </div> */}
           <header>
           <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
             <div className="link-group">
@@ -95,18 +87,16 @@ class Home extends Component {
             </div>
           </nav>
           </header>
-        <Switch>
-          <Route 
-            path={"/upload"}
-            render={props => (
-              <Upload {...props} handleFileUpload={this.handleFileUpload} />
-            )}
-          />
-        </Switch>
+          <Switch>
+            <Route 
+              path={"/upload"}
+              render={props => (
+                <Upload {...props} />
+              )}
+            />
+          </Switch>
         </div>
       </BrowserRouter>
-
-
     )
   }
 }

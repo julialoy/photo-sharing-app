@@ -3,6 +3,7 @@ import { withRouter }  from 'react-router-dom';
 import Dropzone from 'react-dropzone';
 import axios from 'axios';
 
+
 class Upload extends Component {
   constructor(props) {
     super(props);
@@ -17,15 +18,21 @@ class Upload extends Component {
     this.handleUpload = this.handleUpload.bind(this);
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
   }
-  
+
   setFileNames(files) {
-    files.map(file => this.state.fileNames.push(file.name));
+    files.map(file => {
+      this.setState( prevState => ({
+        fileNames: prevState.fileNames.concat(file)
+      }));
+    });
   }
   
   handleDrop(acceptedFiles) {
-    console.log(acceptedFiles);
     this.setFileNames(acceptedFiles);
-    this.state.fileData.push(acceptedFiles);
+    this.setState( prevState => ({
+      fileData: prevState.fileData.concat(acceptedFiles)
+    }));
+    console.log(this.state);
   }
 
   handleIndexRedirect() {
@@ -59,11 +66,6 @@ class Upload extends Component {
         }
       })
       .catch(err => console.log(err));
-
-  }
-
-  componentDidMount() {
-
   }
 
   render() {
@@ -79,9 +81,9 @@ class Upload extends Component {
         </Dropzone>
         <div className="file-list">
           <strong>Files:</strong>
-          <ul>
+           <ul>
             {this.state.fileNames.map(file => (
-              <li key={file}>{file}</li>
+              <li key={file.name}>{file.name}</li>
             ))}
           </ul>
         </div>

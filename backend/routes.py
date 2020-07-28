@@ -55,7 +55,7 @@ async def json_handler(self, *, loads=json.loads):
 
 @asyncio.coroutine
 @router.get("/")
-@require_login
+# @require_login
 async def index_handler(request: web.Request) -> web.Response:
     session = await get_session(request)
     username = session.get("username")
