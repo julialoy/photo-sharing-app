@@ -37,6 +37,7 @@ async def init_app(db_path: Path) -> web.Application:
     app.router.add_route("POST", "/logout", logout_handler)
     app.router.add_route("POST", "/upload", upload_handler)
     app.router.add_static("/static", path=str(BASE_PATH / "static"), name="static")
+    app.router.add_static("/images", path=str(BASE_PATH / "static/images"), name="images")
     app.cleanup_ctx.append(init_db)
     # app.cleanup_ctx.append(persistent_session)
     # app.middlewares.append(error_middleware)

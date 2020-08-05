@@ -17,12 +17,13 @@ class Upload extends Component {
     this.setFileNames = this.setFileNames.bind(this);
     this.handleUpload = this.handleUpload.bind(this);
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
+    this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
   }
 
   setFileNames(files) {
     files.map(file => {
       this.setState( prevState => ({
-        fileNames: prevState.fileNames.concat(file)
+        fileNames: prevState.fileNames.concat(file.name)
       }));
     });
   }
@@ -32,7 +33,10 @@ class Upload extends Component {
     this.setState( prevState => ({
       fileData: prevState.fileData.concat(acceptedFiles)
     }));
-    console.log(this.state);
+  }
+
+  handleLoginRedirect() {
+    this.props.history.push("/login");
   }
 
   handleIndexRedirect() {
@@ -48,7 +52,8 @@ class Upload extends Component {
     let imageData = new FormData();
     console.log("FORM DATA BEFORE APPEND: ", imageData);
     for (let x = 0; x < this.state.fileData.length; x++) {
-      imageData.append('image' + x, this.state.fileData[x][0]);
+      imageData.append('image' + x, this.state.fileData[x]);
+      console.log("APPENDING ", 'image', x, this.state.fileData[x]);
     }
 
     axios.post("http://localhost:8080/upload",
@@ -69,6 +74,14 @@ class Upload extends Component {
   }
 
   render() {
+    // This doesn't work when not logged in since Home component isn't passing props?
+    console.log("UPLOAD IS AUTHORIZED? ", this.props.isAuthed);
+
+    if (!this.props.isAuthed) {
+      this.handleLoginRedirect();
+    }
+
+    console.log("UPLOAD STATE: ", this.state);
     return (
       <div className="upload-field">
         <Dropzone onDrop={this.handleDrop}>
@@ -83,7 +96,7 @@ class Upload extends Component {
           <strong>Files:</strong>
            <ul>
             {this.state.fileNames.map(file => (
-              <li key={file.name}>{file.name}</li>
+              <li key={file}>{file}</li>
             ))}
           </ul>
         </div>

@@ -70,7 +70,6 @@ def create_images_db() -> None:
     sqlite_db = get_db_path()
     if sqlite_db.exists():
         print("DATABASE EXISTS")
-        #print(sqlite_db)
         try:
             with sqlite3.connect(sqlite_db) as conn:
                 cur = conn.cursor()
@@ -92,6 +91,8 @@ def create_images_db() -> None:
             album_key INTEGER,
             child_key INTEGER,
             filename TEXT,
+            web_size_filename TEXT,
+            thumbnail_filename TEXT,
             url TEXT,
             date_taken DATE,
             title TEXT,

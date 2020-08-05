@@ -1,6 +1,5 @@
-// From YouTube tutorial
 import React, { Component } from "react";
-import { withRouter } from "react-router-dom";
+import { Redirect, withRouter } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from "axios";
 
@@ -13,7 +12,7 @@ class Signin extends Component {
     this.state = {
       email: "",
       password: "",
-      signinErrors: ""
+      signinErrors: "",
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -21,9 +20,11 @@ class Signin extends Component {
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
   }
 
-  static propTypes = {
-    handleSuccessfulAuth: PropTypes.func
-  };
+/*   static propTypes = {
+    handleSuccessfulAuth: PropTypes.func,
+    loggedInStatus: PropTypes.bool.isRequired,
+    checkLoginStatus: PropTypes.func
+  }; */
   
   handleIndexRedirect() {
     this.props.history.push("/");
@@ -32,6 +33,27 @@ class Signin extends Component {
   handleChange(evt) {
     this.setState({
       [evt.target.name]: evt.target.value
+    });
+  }
+
+  handleRedirect(authentication) {
+    if (authentication === true) {
+      console.log("HANDLE REDIRECT THIS: ",this);
+      this.setState({
+        email: '',
+        password: '',
+        signInErrors: '',
+        redirectToReferrer: true
+      });
+    }
+  }
+
+  handleResetOnError(err) {
+    this.setState({
+      email: '',
+      password: '',
+      signInErrors: err,
+      redirectToReferrer: true
     });
   }
 
@@ -53,30 +75,33 @@ class Signin extends Component {
             password: password
           }
         }, 
-        {withCredentials: true},
+        { withCredentials: true },
       )
       .then(response => {
         if (response.data.logged_in) {
           handleSuccessfulAuth(response.data);
           console.log(response.data)
+
           this.handleIndexRedirect();
         }
       })
       .catch(error => {
         console.log("login error:", error);
+        this.handleResetOnError(error);
       });
-    // Reset form after submit
-    this.setState({
-      email: "",
-      password: ""
-    })
   }
-  
+
   render() {
+
     const {
       email,
-      password
+      password,
     } = this.state;
+
+    if (this.props.isAuthed === true) {
+      return <Redirect to='/' />
+    }
+    
     return (
       <div id="loginBody" className="text-center">
         <form id="loginForm" className="form-signin" onSubmit={this.handleSubmit}>
@@ -98,6 +123,5 @@ class Signin extends Component {
     )
   }
 }
-
 
 export default withRouter(Signin);

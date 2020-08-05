@@ -1,24 +1,29 @@
 import React, { Component } from 'react';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
-import Home from './Home';
-import Register from './Register';
-import Signin from './Signin';
+import Home from './Home.js';
+import Register from './Register.js';
+import Signin from './Signin.js';
 import axios from 'axios';
-import Logout from './Logout';
+import Logout from './Logout.js';
 
 class App extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      current_user_id: null,
-      current_user_username: "",
-      current_user_state: false
+      current_user: {
+        id: null,
+        username: '',
+        isAuthenticated: false
+      },
+      photos: [],
+      havePhotos: false
     }
 
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
+    this.retrievePhotos = this.retrievePhotos.bind(this);
   }
 
   checkLoginStatus() {
@@ -26,17 +31,34 @@ class App extends Component {
     .then(response => {
       console.log(response.data)
       console.log(response.data.is_logged_in);
-      if (response.data.is_logged_in && !this.state.current_user_state) {
+      if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
         this.handleSuccessfulAuth(response.data);
-      } else if (!response.data.is_logged_in && this.state.current_user_state) {
-        this.setState({
-          current_user_id: null,
-          current_user_username: "",
-          current_user_state: false
-        });
+        this.retrievePhotos();
+      } else if (!response.data.is_logged_in && this.state.current_user.isAuthenticated) {
+        this.setState(() => ({
+          current_user: {
+            id: null,
+            username: '',
+            isAuthenticated: false
+          }
+        }));
       }
     })
     .catch(err => console.log("LOGIN ERROR: ", err));
+  }
+
+  retrievePhotos() {
+    axios.get("http://localhost:8080/", { withCredentials: true })
+    .then(data => {
+      console.log("INDEX PHOTO DATA: ", data);
+      if (data.data) {
+        this.setState( () => ({
+          photos: data.data,
+          havePhotos: true
+        }));
+      }
+    })
+    .catch(err => console.log("ERROR: ", err));
   }
 
   componentDidMount() {
@@ -44,22 +66,24 @@ class App extends Component {
   }
 
   handleSuccessfulAuth(data) {
-    this.setState({
-      current_user_id: data.user_id,
-      current_user_username: data.username,   
-      current_user_state: true
-    });
+    this.setState(() => ({
+      current_user: {
+        id: data.user_id,
+        username: data.username,
+        isAuthenticated: true
+      }
+    }));
   }
 
   handleSuccessfulLogOut(data) {
-    this.setState({
-      current_user_id: null,
-      current_user_username: "",
-      current_user_state: data.log_out_successful
-    });
+    this.setState(() => ({
+      current_user: {
+        is: null,
+        username: '',
+        isAuthenticated: false
+      }
+    }));
   }
-
-
 
   render() { 
     return (
@@ -67,30 +91,50 @@ class App extends Component {
           <Switch>
             <Route
               exact
-              path={"/"}
+              path='/'
               render={props => (
-                <Home {...props} handleSuccessfulLogOut={this.handleSuccessfulLogOut} currentUser={this.state.current_user_username} loggedInStatus={this.state.current_user_state} />
+                <Home 
+                  {...props}
+                  isAuthed={this.state.current_user.isAuthenticated}
+                  currentUser={this.state.current_user}
+                  photos={this.state.photos}
+                  havePhotos={this.state.havePhotos}
+                  handleSuccessfulLogOut={this.handleSuccessfulLogOut}
+                  retrievePhotos={this.retrievePhotos}
+                />
               )}
             />
             <Route 
               exact 
               path={"/register"} 
               render={props => (
-                <Register {...props} handleSuccessfulAuth={this.handleSuccessfulAuth} loggedInStatus={this.state.current_user_state} />
+                <Register 
+                  {...props} 
+                  handleSuccessfulAuth={this.handleSuccessfulAuth} 
+                  isAuthed={this.state.current_user.isAuthenticated} 
+                />
               )} 
             />
             <Route 
               exact
               path={"/login"}
               render={props => (
-                <Signin {...props} handleSuccessfulAuth={this.handleSuccessfulAuth} />
+                <Signin 
+                  {...props} 
+                  isAuthed={this.state.current_user.isAuthenticated} 
+                  handleSuccessfulAuth={this.handleSuccessfulAuth} 
+                />
               )}
             />
             <Route 
               exact
               path={"/logout"}
               render={props => (
-                <Logout {...props} currentUser={this.state.current_user_username} handleSuccessfulLogOut={this.handleSuccessfulLogOut} />
+                <Logout 
+                  {...props} 
+                  currentUser={this.state.current_user} 
+                  handleSuccessfulLogOut={this.handleSuccessfulLogOut} 
+                />
               )}
             />
           </Switch>
@@ -98,6 +142,5 @@ class App extends Component {
     );
   }
 }
-
 
 export default App;

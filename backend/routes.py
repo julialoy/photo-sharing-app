@@ -1,4 +1,6 @@
+import glob
 import os
+import io
 from pathlib import Path
 from datetime import date
 import asyncio
@@ -9,7 +11,7 @@ from uuid import uuid4
 
 from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
-import PIL.Image
+from PIL import Image
 
 from db import DATABASE
 
@@ -35,6 +37,36 @@ def image_to_db(user_id, album_id, child_id, filename, image_date) -> None:
         conn.commit()
 
 
+def retrieve_images(current_user_id):
+    print(f"IN RETRIEVE IMAGES {type(current_user_id)}")
+    with sqlite3.connect(db) as conn:
+        cur = conn.cursor()
+        cur.execute("""
+        SELECT * from images
+        WHERE user_id = ?
+        """, (current_user_id,))
+        return cur
+
+
+def parse_image_data(db_data):
+    parsed_data = []
+
+    for row in db_data:
+        parsed_data.append({
+            'photo_id': row[0],
+            'album_id': row[2],
+            'child_id': row[3],
+            'filename': row[4],
+            # 'url': row[5],
+            'url': '../static/images/' + row[4],
+            'date_taken': row[6],
+            'title': row[7],
+            'description': row[8],
+        })
+
+    return parsed_data
+
+
 @web.middleware
 async def check_login(request: web.Request,
                       handler: _WebHandler) -> web.StreamResponse:
@@ -56,16 +88,16 @@ async def json_handler(self, *, loads=json.loads):
 @asyncio.coroutine
 @router.get("/")
 # @require_login
-async def index_handler(request: web.Request) -> web.Response:
+async def index_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
     print(f"USERNAME: {username}")
     print(f"SESSION: {session}")
-    return web.Response(
-        text="Hello from the Index!",
-        headers={
-            "X-Custom-Server-Header": "Custom data",
-        })
+    user_id = session.get("user_id")
+    print(f"USER ID: {user_id}")
+    available_photos = retrieve_images(user_id)
+    parsed_photos = parse_image_data(available_photos)
+    return web.json_response(parsed_photos)
 
 
 @asyncio.coroutine
@@ -210,6 +242,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
     image_data = await request.post()
     counter = 0
     end_count = len(image_data)
+    print(f"IMAGE DATA: {image_data}")
     while counter < end_count:
         key = 'image' + str(counter)
         filename = image_data[key].filename
@@ -232,22 +265,37 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 image_contents = image_file.read()
                 f.write(image_contents)
 
-            # Get exif
-            img = PIL.Image.open(image_file)
+            # Get exif for date taken
+            img = Image.open(image_file)
             exif_data = img.getexif()
             creation_date = exif_data.get(36867)
 
             if creation_date is None:
                 creation_date = date.today()
 
+            # Resize for web and save
+            orig_size = img.size
+            width_percent = (300/float(orig_size[0]))
+            new_height = int((float(orig_size[1]) * float(width_percent)))
+            web_resized_img = img.resize((300, new_height), Image.ANTIALIAS)
+            web_size_filename = "web_" + filename
+            web_resized_img.save(web_size_filename)
+
+            # Create thumbnail and save
+            thumb_size = 128, 128
+            thumb_filename = "thumb_" + filename
+
+            img.thumbnail(thumb_size)
+            img.save(thumb_filename)
+
             with sqlite3.connect(db) as conn:
                 cur = conn.cursor()
                 cur.execute("""
                 UPDATE images
-                SET date_taken=(?)
+                SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
                 WHERE user_id=(?)
                 AND filename=(?)
-                """, (creation_date, current_user, filename))
+                """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
                 conn.commit()
 
             print(f"creation_date for {filename}: {creation_date}")
