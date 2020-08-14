@@ -26,14 +26,14 @@ def require_login(func: _WebHandler) -> _WebHandler:
     return func
 
 
-def image_to_db(user_id, album_id, child_id, filename, image_date) -> None:
+def image_to_db(user_id, album_id, child_id, filename, web_filename, thumbnail_filename, image_date) -> None:
     """Add uploaded image information to db"""
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute("""
-        INSERT INTO images (user_key, album_key, child_key, filename, date_taken)
+        INSERT INTO images (user_key, album_key, child_key, filename, web_size_filename, thumbnail_filename, date_taken)
         VALUES (?, ?, ?, ?, ?)
-        """, (user_id, album_id, child_id, filename, image_date))
+        """, (user_id, album_id, child_id, filename, web_filename, thumbnail_filename, image_date))
         conn.commit()
 
 
@@ -57,14 +57,21 @@ def parse_image_data(db_data):
             'album_id': row[2],
             'child_id': row[3],
             'filename': row[4],
-            # 'url': row[5],
-            'url': '../static/images/' + row[4],
-            'date_taken': row[6],
-            'title': row[7],
-            'description': row[8],
+            'web_size_filename': row[5],
+            'thumbnail_filename': row[6],
+            'full_size_loc': '../static/images/' + row[4],
+            'web_size_loc': '../static/images/' + row[5],
+            'thumb_size_loc': '../static/images/' + row[6],
+            'date_taken': row[8],
+            'title': row[9],
+            'description': row[10],
         })
 
     return parsed_data
+
+
+def order_images(parsed_image_array):
+    parsed_image_array.sort(key=lambda x: x['date_taken'])
 
 
 @web.middleware
@@ -134,7 +141,6 @@ async def login_handler(request: web.Request) -> web.json_response:
                 session["auth_token"] = auth_token
                 session["logged_in"] = True
                 print(f"{session}")
-
                 cur.execute("""
                 UPDATE users
                 SET auth_token = (?)
@@ -236,7 +242,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
 @router.post("/upload")
 @require_login
 async def upload_handler(request: web.Request) -> web.json_response:
-    data = {"upload_successful": False, "error": None}
+    data = {"upload_successful": False, "warnings": [], "error": None}
     session = await get_session(request)
     current_user = session['user_id']
     image_data = await request.post()
@@ -247,60 +253,93 @@ async def upload_handler(request: web.Request) -> web.json_response:
         key = 'image' + str(counter)
         filename = image_data[key].filename
         image_file = image_data[key].file
+        image_type = filename.split('.')[-1]
+        if image_type == 'jpg':
+            image_type = 'jpeg'
+
+        print(f"Handling file {counter} of {end_count}: {filename}")
+        # See if file has already been saved
         try:
             with sqlite3.connect(db) as conn:
                 cur = conn.cursor()
                 cur.execute("""
-                INSERT INTO images (user_id, filename)
-                VALUES (?, ?)
-                """, (current_user, filename))
-                conn.commit()
+                SELECT *
+                FROM images
+                WHERE filename=(?) AND user_id=(?)
+                """, (filename, current_user))
+
+                file_exists = False
+
+                for row in cur:
+                    if row[4] == filename:
+                        print(f"FOUND FILENAME: {filename}")
+                        data['warnings'].append(f"Image {filename} already exists!")
+                        counter += 1
+                        file_exists = True
+                        break
+
+                if file_exists:
+                    continue
+                else:
+                    print(f"{filename} not found in database. Continuing to process and save file.")
         except sqlite3.DatabaseError as err:
-            data['upload_successful'] = False
-            data['error'] = err
-            print(f"Could not save image: {err}")
-            return web.json_response(data)
+            print(f"DATABASE ERROR: {err}")
         else:
-            with open(os.path.join('static/images/', filename), 'wb') as f:
-                image_contents = image_file.read()
-                f.write(image_contents)
 
-            # Get exif for date taken
-            img = Image.open(image_file)
-            exif_data = img.getexif()
-            creation_date = exif_data.get(36867)
+            # If file doesn't already exist update database for new file and save
+            try:
+                with sqlite3.connect(db) as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                    INSERT INTO images (user_id, filename)
+                    VALUES (?, ?)
+                    """, (current_user, filename))
+                    conn.commit()
+            except sqlite3.DatabaseError as err:
+                data['upload_successful'] = False
+                data['error'] = err
+                print(f"Could not save image: {err}")
+                return web.json_response(data)
+            else:
+                with open(os.path.join('static/images/', filename), 'wb') as f:
+                    image_contents = image_file.read()
+                    f.write(image_contents)
 
-            if creation_date is None:
-                creation_date = date.today()
+                # Get exif for date taken
+                img = Image.open(image_file)
+                exif_data = img.getexif()
+                creation_date = exif_data.get(36867)
 
-            # Resize for web and save
-            orig_size = img.size
-            width_percent = (300/float(orig_size[0]))
-            new_height = int((float(orig_size[1]) * float(width_percent)))
-            web_resized_img = img.resize((300, new_height), Image.ANTIALIAS)
-            web_size_filename = "web_" + filename
-            web_resized_img.save(web_size_filename)
+                if creation_date is None:
+                    creation_date = date.today()
 
-            # Create thumbnail and save
-            thumb_size = 128, 128
-            thumb_filename = "thumb_" + filename
+                # Resize for web and save
+                orig_size = img.size
+                width_percent = (300/float(orig_size[0]))
+                new_height = int((float(orig_size[1]) * float(width_percent)))
+                web_resized_img = img.resize((300, new_height))
+                web_size_filename = "web_" + filename
+                web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
 
-            img.thumbnail(thumb_size)
-            img.save(thumb_filename)
+                # Create thumbnail and save
+                thumb_size = 128, 128
+                thumb_filename = "thumb_" + filename
+                img.thumbnail(thumb_size)
+                img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
 
-            with sqlite3.connect(db) as conn:
-                cur = conn.cursor()
-                cur.execute("""
-                UPDATE images
-                SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
-                WHERE user_id=(?)
-                AND filename=(?)
-                """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
-                conn.commit()
+                with sqlite3.connect(db) as conn:
+                    cur = conn.cursor()
+                    cur.execute("""
+                    UPDATE images
+                    SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
+                    WHERE user_id=(?)
+                    AND filename=(?)
+                    """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
+                    conn.commit()
 
-            print(f"creation_date for {filename}: {creation_date}")
-            data['upload_successful'] = True
+                print(f"creation_date for {filename}: {creation_date}")
+                data['upload_successful'] = True
 
-        counter += 1
+                counter += 1
 
     return web.json_response(data)

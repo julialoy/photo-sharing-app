@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import { BrowserRouter, Switch, Route } from 'react-router-dom';
 import Home from './Home.js';
 import Register from './Register.js';
@@ -6,7 +6,7 @@ import Signin from './Signin.js';
 import axios from 'axios';
 import Logout from './Logout.js';
 
-class App extends Component {
+class App extends PureComponent {
   constructor(props) {
     super(props);
 

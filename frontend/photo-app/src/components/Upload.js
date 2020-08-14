@@ -40,6 +40,7 @@ class Upload extends Component {
   }
 
   handleIndexRedirect() {
+    console.log("NOW REDIRECT BACK TO THE INDEX");
     this.props.history.push("/");
   }
 
@@ -65,9 +66,12 @@ class Upload extends Component {
         if (response.data.error) {
           console.log("There was a problem uploading your file: ", response.data.error);
         } else if (response.data.upload_successful) {
+          this.props.completePhotoUpload(true);
           this.handleIndexRedirect();
         } else {
           console.log("Something unexpected happened!");
+          this.props.completePhotoUpload(false);
+          this.handleIndexRedirect();
         }
       })
       .catch(err => console.log(err));
