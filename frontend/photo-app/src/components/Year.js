@@ -1,18 +1,7 @@
 import React, { Component } from 'react';
-import Masonry from 'react-masonry-component';
 import PropTypes from "prop-types";
+import Photos from './Photos';
 
-const masonryOptions = {
-  transitionDuration: 0,
-  columnWidth: 100,
-  itemSelector: '.image-element-class',
-  gutter: 1,
-  horizontalOrder: true
-};
-
-const imagesLoadedOptions = {
-  background: 'pink'
-};
 
 class Year extends Component {
   constructor(props) {
@@ -23,37 +12,44 @@ class Year extends Component {
     photos: PropTypes.array,
     showPhotoModal: PropTypes.func
   };
+
   render() {
-    // console.log("PHOTOS PROP: ", this.props.photos);
-    const childElements = this.props.photos.map(photo => (
-      //<li className="image-element-class">
-        <img className="image-element-class" key={photo.filename} src={photo.web_size_loc} alt="" onClick={() => this.props.showPhotoModal(photo.full_size_loc)} />
-      //</li>
-    ));
+
+    let yearArray = [];
+    let finalYearArray = [];
+    let photosByYears = {};
+
+    for (let i = 0; i < this.props.photos.length; i++) {
+      const fullDate = this.props.photos[i].date_taken;
+      const year = fullDate.split(':')[0].split('-')[0];
+      yearArray.push(year);
+    }
+
+    for (let j = 0; j < yearArray.length; j++) {
+      if (!finalYearArray.includes(yearArray[j])) {
+        finalYearArray.push(yearArray[j]);
+      }
+    }
+
+    for (let x = 0; x < finalYearArray.length; x++) {
+      let photosForYear = [];
+      this.props.photos.map(photo => {
+        if (photo.date_taken.split(':')[0].split('-')[0] === finalYearArray[x]) {
+          photosForYear.push(photo);
+        }
+      });
+      photosByYears[finalYearArray[x]] = photosForYear;
+    }
+
     return (
+      
       <div className="year grid">
-        <h3>2020 Year Placeholder</h3>
-{/*         <div className="month grid" data-masonry-options='{"itemSelector": ".grid-item", "columnWidth": "100", "horizontalOrder": "false"}'>
-          {this.props.photos.map(photo => (
-            <img 
-              key={photo.filename} 
-              className="photo grid-item" 
-              src={photo.web_size_loc} 
-              alt="" 
-              onClick={() => this.props.showPhotoModal(photo.full_size_loc)}
-            />
-          ))}
-        </div> */}
-        <Masonry
-          className={'my-gallery-class'}
-          elementType={'ul'}
-          options={masonryOptions}
-          disableImagesLoaded={false}
-          updateOnEachImageLoad={true}
-          imagesLoadedOptions={imagesLoadedOptions}
-        > 
-          {childElements} 
-        </Masonry>
+        {finalYearArray.map( year => (
+          <div>
+            <h3>{year}</h3>
+            <Photos yearPhotos={photosByYears[year]} showPhotoModal={this.props.showPhotoModal} />
+          </div>
+        ))}
       </div>
     );
   }

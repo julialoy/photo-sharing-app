@@ -71,7 +71,8 @@ def parse_image_data(db_data):
 
 
 def order_images(parsed_image_array):
-    parsed_image_array.sort(key=lambda x: x['date_taken'])
+    parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
+    # print(f"Reordered array {parsed_image_array}")
 
 
 @web.middleware
@@ -104,6 +105,7 @@ async def index_handler(request: web.Request) -> web.json_response:
     print(f"USER ID: {user_id}")
     available_photos = retrieve_images(user_id)
     parsed_photos = parse_image_data(available_photos)
+    order_images(parsed_photos)
     return web.json_response(parsed_photos)
 
 

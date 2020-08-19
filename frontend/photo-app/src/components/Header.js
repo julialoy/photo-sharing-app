@@ -22,7 +22,7 @@ class Header extends Component {
     } = this.props;
     return (
       <header>
-      <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+      <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div className="link-group">
           <a className="navbar-brand">Welcome, {currentUser}</a>
         </div>

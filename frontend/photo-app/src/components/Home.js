@@ -120,7 +120,7 @@ class Home extends PureComponent {
       <BrowserRouter>
         <div id="index-div">
           <header>
-            <nav className="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+            <nav className="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
               <div className="link-group">
                 <Link 
                   to="/" 
@@ -196,7 +196,7 @@ class Home extends PureComponent {
           fullPhoto={this.state.fullSizeLoc} 
           onClose={this.handleModalClose} 
         />
-        {this.props.havePhotos ? <Year photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
+        {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
           <Switch>
             <Route 
               path={"/upload"}
