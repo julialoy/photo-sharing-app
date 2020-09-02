@@ -12,7 +12,9 @@ class Home extends PureComponent {
 
     this.state = {
       showModal: false,
-      fullSizeLoc: ""
+      photoId: "",
+      fullSizeLoc: "",
+      fullSizeDate: ""
     };
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
@@ -74,21 +76,25 @@ class Home extends PureComponent {
     }
   }
 
-  showPhotoModal(fullSizePhoto) {
+  showPhotoModal(photoData) {
     this.setState({
       showModal: true,
-      fullSizeLoc: fullSizePhoto
+      photoId: photoData.photo_id,
+      photoFilename: photoData.filename,
+      fullSizeLoc: photoData.full_size_loc,
+      fullSizeDate: photoData.date_taken
     });
     // Add 'modal-open'class on open so scroll bar will be removed and scrolling locked on body
     document.body.classList.add('modal-open');
-    console.log("showPhotoModal toggled: ", fullSizePhoto);
+    console.log("showPhotoModal toggled: ", photoData.full_size_loc);
   }
 
   handleModalClose() {
     console.log("HANDLE MODAL CLOSE");
     this.setState({
       showModal: false,
-      fullSizeLoc: ""
+      fullSizeLoc: "",
+      fullSizeDate: ""
     });
     // Remove 'modal-open' class on close so body will scroll
     document.body.classList.remove('modal-open');
@@ -192,8 +198,11 @@ class Home extends PureComponent {
         </div>
         <div className="container-fluid">
         <PhotoModal 
-          show={this.state.showModal} 
-          fullPhoto={this.state.fullSizeLoc} 
+          show={this.state.showModal}
+          photoId={this.state.photoId}
+          photoName={this.state.photoFilename}
+          fullPhoto={this.state.fullSizeLoc}
+          photoDate={this.state.fullSizeDate} 
           onClose={this.handleModalClose} 
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}

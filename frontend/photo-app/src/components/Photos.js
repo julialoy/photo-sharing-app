@@ -15,7 +15,13 @@ class Photos extends Component {
   render() {
     console.log("IN PHOTOS COMPONENT: ", this.props.yearPhotos);
     const childElements = this.props.yearPhotos.map(photo => (
-        <img className="image-element-class" key={photo.filename} src={photo.web_size_loc} alt="" onClick={() => this.props.showPhotoModal(photo.full_size_loc)} />
+        <img 
+          className="image-element-class" 
+          key={photo.filename} 
+          src={photo.web_size_loc} 
+          alt="" 
+          onClick={() => this.props.showPhotoModal(photo)}
+        />
     ));
     return (
       <Masonry

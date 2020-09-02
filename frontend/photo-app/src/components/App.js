@@ -52,10 +52,12 @@ class App extends PureComponent {
     .then(data => {
       console.log("INDEX PHOTO DATA: ", data);
       if (data.data) {
-        this.setState( () => ({
-          photos: data.data,
-          havePhotos: true
-        }));
+        if (data.data.length > 0) {
+          this.setState( () => ({
+            photos: data.data,
+            havePhotos: true
+          }));
+        }
       }
     })
     .catch(err => console.log("ERROR: ", err));

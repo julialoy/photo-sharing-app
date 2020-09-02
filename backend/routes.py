@@ -241,6 +241,17 @@ async def logout_handler(request: web.Request) -> web.json_response:
 
 
 @asyncio.coroutine
+@router.post("/edit")
+@require_login
+async def edit_handler(request: web.Request) -> None:
+    # data = {"edit_successful": False, "warnings": [], "error": None}
+    session = await get_session(request)
+    current_user = session['user_id']
+    edited_data = await request.post()
+    print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
+
+
+@asyncio.coroutine
 @router.post("/upload")
 @require_login
 async def upload_handler(request: web.Request) -> web.json_response:
@@ -310,11 +321,17 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 # Get exif for date taken
                 img = Image.open(image_file)
                 exif_data = img.getexif()
-                creation_date = exif_data.get(36867)
+                creation_exif_date = exif_data.get(36867)
 
-                if creation_date is None:
+                if creation_exif_date is None:
                     creation_date = date.today()
-
+                else:
+                    date_portion = creation_exif_date.split(' ')[0]
+                    time_portion = creation_exif_date.split(' ')[1]
+                    creation_year = date_portion.split(':')[0]
+                    creation_month = date_portion.split(':')[1]
+                    creation_day = date_portion.split(':')[2]
+                    creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
                 # Resize for web and save
                 orig_size = img.size
                 width_percent = (300/float(orig_size[0]))

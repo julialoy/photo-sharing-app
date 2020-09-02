@@ -34,10 +34,10 @@ body.modal-open {
 
 .modal {
   background-color: #fff;
-  width: 90%;
+  width: 70%;
   height: auto;
-  max-width: 90%;
-  min-height: 50%;
+  max-width: 70%;
+  min-height: 30%;
   margin: 2em auto;
   padding: 30px;
   border-radius: 3px;
