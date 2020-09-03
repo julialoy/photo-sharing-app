@@ -9,9 +9,9 @@ class PhotoModal extends Component {
 
     this.state = {
       editToggled: false,
-      newMonth: "",
-      newDay: "",
-      newYear: ""
+      month: "",
+      day: "",
+      year: ""
     };
 
     this.toggleEditForm = this.toggleEditForm.bind(this);
@@ -19,6 +19,7 @@ class PhotoModal extends Component {
     this.closeEditForm = this.closeEditForm.bind(this);
     this.handleModalClose = this.handleModalClose.bind(this);
     this.handleChange = this.handleChange.bind(this);
+    this.handleCancel = this.handleCancel.bind(this);
   }
 
   static propTypes = {
@@ -34,7 +35,25 @@ class PhotoModal extends Component {
 
   saveNewDate(evt) {
     evt.preventDefault();
-    const newPhotoDate = this.state.newMonth.concat('-', this.state.newDay, '-', this.state.newYear);
+    let saveYear = this.state.year;
+    let saveMonth = this.state.month;
+    let saveDay = this.state.day;
+    if (this.state.month === "") {
+      saveMonth = (moment(this.props.photoDate).month() + 1).toString();
+    }
+    if (this.state.day === "") {
+      saveDay = (moment(this.props.photoDate).date()).toString();
+    }
+    if (this.state.year === "") {
+      saveYear = (moment(this.props.photoDate).year()).toString();
+    }
+    if (saveMonth.length === 1) {
+      saveMonth = "0".concat(saveMonth);
+    }
+    if (saveDay.length === 1) {
+      saveDay = "0".concat(saveDay);
+    }
+    const newPhotoDate = saveYear.concat('-', saveMonth, '-', saveDay);
     axios.post("http://localhost:8080/edit",
     {
       photo: {
@@ -48,8 +67,12 @@ class PhotoModal extends Component {
     )
     .then(response => console.log(response))
     .catch(err => console.log(err));
+    
     this.setState({
-      editToggled: false
+      editToggled: false,
+      month: "",
+      day: "",
+      year: ""
     });
   }
 
@@ -71,6 +94,15 @@ class PhotoModal extends Component {
     });
   }
 
+  handleCancel() {
+    this.setState({
+      editToggled: false,
+      month: "",
+      day: "",
+      year: ""
+    });
+  }
+
 
   render() {
     console.log("PHOTO MODAL STATE: ", this.state);
@@ -89,23 +121,26 @@ class PhotoModal extends Component {
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
       <div className="col">
-        <label htmlFor="newMonth">Month</label>
-        <select defaultValue={moment(this.props.photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="newMonth" id="newMonth">
+        <label htmlFor="month">Month</label>
+        <select defaultValue={moment(this.props.photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="month" id="month">
           {monthSelectArray}
         </select>
       </div>
       <div className="col">
-        <label htmlFor="newDay">Day</label>
-        <select defaultValue={moment(this.props.photoDate).date()} onChange={this.handleChange} className="form-control form-control-sm" name="newDay" id="newDay">
+        <label htmlFor="day">Day</label>
+        <select defaultValue={moment(this.props.photoDate).date()} onChange={this.handleChange} className="form-control form-control-sm" name="day" id="day">
           {daySelectArray}
         </select>
       </div>
       <div className="col">
-        <label htmlFor="newYear">Year</label>
-        <input className="form-control form-control-sm" type="text" name="newYear" id="newYear" onChange={this.handleChange} placeholder={moment(this.props.photoDate).format("YYYY")} />
+        <label htmlFor="year">Year</label>
+        <input className="form-control form-control-sm" type="text" name="year" id="year" onChange={this.handleChange} placeholder={moment(this.props.photoDate).format("YYYY")} />
       </div>
       <div className="col">
         <button className="btn btn-dark" type="submit">Save</button>
+      </div>
+      <div className="col">
+        <button className="btn btn-dark" type="button" onClick={this.handleCancel}>Cancel</button>
       </div>
     </form>
 

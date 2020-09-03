@@ -243,12 +243,13 @@ async def logout_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/edit")
 @require_login
-async def edit_handler(request: web.Request) -> None:
-    # data = {"edit_successful": False, "warnings": [], "error": None}
+async def edit_handler(request: web.Request) -> web.json_response():
+    data = {"edit_successful": False, "warnings": [], "error": None}
     session = await get_session(request)
-    current_user = session['user_id']
-    edited_data = await request.post()
+    current_user = session.get("user_id")
+    edited_data = await json_handler(request)
     print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
+    return web.json_response(data)
 
 
 @asyncio.coroutine
