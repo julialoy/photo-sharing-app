@@ -1,17 +1,19 @@
-import React, { Component } from 'react';
+import React, { PureComponent } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 
-class PhotoModal extends Component {
+class PhotoModal extends PureComponent {
   constructor(props) {
     super(props);
 
     this.state = {
       editToggled: false,
+      displayDate: this.props.photoDate,
       month: "",
       day: "",
-      year: ""
+      year: "",
+      error: ""
     };
 
     this.toggleEditForm = this.toggleEditForm.bind(this);
@@ -20,6 +22,7 @@ class PhotoModal extends Component {
     this.handleModalClose = this.handleModalClose.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleCancel = this.handleCancel.bind(this);
+    this.handleCloseError = this.handleCloseError.bind(this);
   }
 
   static propTypes = {
@@ -34,10 +37,13 @@ class PhotoModal extends Component {
   }
 
   saveNewDate(evt) {
+    console.log("SAVE TIME. ORIGINAL DATE: ", this.state.displayDate);
     evt.preventDefault();
+    let validSave = true
     let saveYear = this.state.year;
     let saveMonth = this.state.month;
     let saveDay = this.state.day;
+
     if (this.state.month === "") {
       saveMonth = (moment(this.props.photoDate).month() + 1).toString();
     }
@@ -54,27 +60,53 @@ class PhotoModal extends Component {
       saveDay = "0".concat(saveDay);
     }
     const newPhotoDate = saveYear.concat('-', saveMonth, '-', saveDay);
-    axios.post("http://localhost:8080/edit",
-    {
-      photo: {
-        id: this.props.photoId,
-        filename: this.props.photoName,
-        oldDate: this.props.photoDate,
-        newDate: newPhotoDate
-      }
-    },
-    {withCredentials: true}
-    )
-    .then(response => console.log(response))
-    .catch(err => console.log(err));
-    
-    this.setState({
-      editToggled: false,
-      month: "",
-      day: "",
-      year: ""
-    });
-  }
+
+    if (!moment(newPhotoDate).isValid()) {
+      validSave = false
+    }
+
+    if (validSave) {
+      axios.post("http://localhost:8080/edit",
+      {
+        photo: {
+          id: this.props.photoId,
+          filename: this.props.photoName,
+          oldDate: this.props.photoDate,
+          newDate: newPhotoDate
+        }
+      },
+      {withCredentials: true}
+      )
+      .then(response => {
+        if (response.data.edit_successful) {
+          this.setState({
+            displayDate: newPhotoDate
+          });
+        }
+        else {
+          this.setState({
+            error: "Date not saved"
+          });
+        }
+      })
+      .catch(err => console.log(err));
+      
+      this.setState({
+        editToggled: false,
+        month: "",
+        day: "",
+        year: ""
+      });
+    } else {
+      this.setState({
+        editToggled: false,
+        month: "",
+        day: "",
+        year: "",
+        error: "Invalid date"
+      });
+    }
+  } 
 
   closeEditForm() {
     this.setState({
@@ -84,6 +116,7 @@ class PhotoModal extends Component {
 
   handleModalClose() {
     this.closeEditForm();
+    this.props.handlePhotoDateChange();
     this.props.onClose();
   }
 
@@ -103,38 +136,44 @@ class PhotoModal extends Component {
     });
   }
 
+  handleCloseError() {
+    this.setState({
+      error: ""
+    });
+  }
+
 
   render() {
     console.log("PHOTO MODAL STATE: ", this.state);
-    const {show, fullPhoto} = this.props;
+    const {show, fullPhoto, photoDate} = this.props;
 
     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
 
-    const photoFullDate = moment(this.props.photoDate);
-    const displayDate = moment(photoFullDate._d).format("dddd, MMM Do YYYY");
+/*     const photoFullDate = moment(this.props.photoDate);
+    const displayDate = moment(photoFullDate._d).format("dddd, MMM Do YYYY"); */
 
     const photoDateDiv = <div className="photo-date">
-      {displayDate} 
+      {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
       <button className="btn btn-dark" onClick={this.toggleEditForm}>Edit</button>
     </div>
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
       <div className="col">
         <label htmlFor="month">Month</label>
-        <select defaultValue={moment(this.props.photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="month" id="month">
+        <select defaultValue={moment(photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="month" id="month">
           {monthSelectArray}
         </select>
       </div>
       <div className="col">
         <label htmlFor="day">Day</label>
-        <select defaultValue={moment(this.props.photoDate).date()} onChange={this.handleChange} className="form-control form-control-sm" name="day" id="day">
+        <select defaultValue={moment(photoDate).date()} onChange={this.handleChange} className="form-control form-control-sm" name="day" id="day">
           {daySelectArray}
         </select>
       </div>
       <div className="col">
         <label htmlFor="year">Year</label>
-        <input className="form-control form-control-sm" type="text" name="year" id="year" onChange={this.handleChange} placeholder={moment(this.props.photoDate).format("YYYY")} />
+        <input className="form-control form-control-sm" type="text" name="year" id="year" onChange={this.handleChange} placeholder={moment(photoDate).format("YYYY")} />
       </div>
       <div className="col">
         <button className="btn btn-dark" type="submit">Save</button>
@@ -144,7 +183,14 @@ class PhotoModal extends Component {
       </div>
     </form>
 
-    if (!this.props.show) {
+    const errorMessage = <div className="alert alert-danger alert-dismissible fade show row" role="alert">
+      <button type="button" className="close" data-dismiss="alert" aria-label="close" onClick={this.handleCloseError}>
+        <span aria-hidden="true">&times;</span>
+      </button>
+      {this.state.error}
+    </div>
+
+    if (!show) {
       return null;
     }
 
@@ -162,7 +208,10 @@ class PhotoModal extends Component {
                 <img className="full-size-photo" src={fullPhoto} alt="" />
               </div>
               <div className="modal-footer">
-                {this.state.editToggled ? dateEditForm : photoDateDiv}
+                {this.state.error ? errorMessage: null}
+                <div className="row">
+                  {this.state.editToggled ? dateEditForm : photoDateDiv}
+                </div>
               </div>
             </div>
           </div>

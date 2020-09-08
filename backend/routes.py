@@ -249,6 +249,36 @@ async def edit_handler(request: web.Request) -> web.json_response():
     current_user = session.get("user_id")
     edited_data = await json_handler(request)
     print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
+    photo_id = edited_data['photo']['id']
+    filename = edited_data['photo']['filename']
+    if "T" in edited_data['photo']['oldDate']:
+        orig_date = edited_data['photo']['oldDate'].split("T")[0]
+    else:
+        orig_date = edited_data['photo']['oldDate']
+    new_date = edited_data['photo']['newDate']
+    print(f"EDIT ROUTE: orig_date: {orig_date}, new_date: {new_date}")
+
+    if orig_date == new_date:
+        data['edit_successful'] = True
+        data['warnings'] = "New date matched original"
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            UPDATE images
+            SET date_taken=(?)
+            WHERE id=(?)
+            AND user_id=(?)
+            AND filename=(?)
+            """, (new_date, photo_id, current_user, filename))
+            conn.commit()
+            data['edit_successful'] = True
+        print(f"EDIT SUCCESSFUL")
+    except sqlite3.DatabaseError as err:
+        print(f"{err}")
+        data['edit_successful'] = False
+        data['error'] = f"{err}"
     return web.json_response(data)
 
 

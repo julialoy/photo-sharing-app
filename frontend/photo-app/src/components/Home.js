@@ -203,7 +203,8 @@ class Home extends PureComponent {
           photoName={this.state.photoFilename}
           fullPhoto={this.state.fullSizeLoc}
           photoDate={this.state.fullSizeDate} 
-          onClose={this.handleModalClose} 
+          onClose={this.handleModalClose}
+          handlePhotoDateChange={this.props.handlePhotoDateChange} 
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
           <Switch>

@@ -24,6 +24,7 @@ class App extends PureComponent {
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
     this.retrievePhotos = this.retrievePhotos.bind(this);
+    this.handlePhotoDateChange = this.handlePhotoDateChange.bind(this);
   }
 
   checkLoginStatus() {
@@ -63,8 +64,8 @@ class App extends PureComponent {
     .catch(err => console.log("ERROR: ", err));
   }
 
-  componentDidMount() {
-    this.checkLoginStatus();
+  handlePhotoDateChange() {
+    this.retrievePhotos();
   }
 
   handleSuccessfulAuth(data) {
@@ -86,8 +87,15 @@ class App extends PureComponent {
       }
     }));
   }
+  
+  componentDidMount() {
+    this.checkLoginStatus();
+  }
 
   render() { 
+    if (this.state.havePhotos) {
+      console.log("APP HAS ACCESS TO PHOTOS: ", this.state.photos);
+    }
     return (
         <BrowserRouter>
           <Switch>
@@ -103,6 +111,7 @@ class App extends PureComponent {
                   havePhotos={this.state.havePhotos}
                   handleSuccessfulLogOut={this.handleSuccessfulLogOut}
                   retrievePhotos={this.retrievePhotos}
+                  handlePhotoDateChange={this.handlePhotoDateChange}
                 />
               )}
             />
