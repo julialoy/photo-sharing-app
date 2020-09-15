@@ -45,6 +45,18 @@ body.modal-open {
   display: block;
 }
 
+.photo-date {
+  margin-right: 2em;
+}
+
+#date {
+  margin-right: 1em;
+}
+
+#photo-form-btn {
+  margin-left: 1em;
+}
+
 /** PHOTO STREAM **/
 .year {
   margin: 1em;
@@ -54,18 +66,9 @@ body.modal-open {
   margin-bottom: 2px;
 }
 
-/* .month {
-  margin: 1em;
-}
-
-.grid-item {
-  width: 20%;
-  margin: 0.15em;
-} */
-
 .full-size-photo {
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  height: auto;
 }
 
 /** UPLOAD **/
@@ -135,7 +138,6 @@ body.modal-open {
 }
 
 /** ERROR MESSAGE **/
-
 #errorAlert {
   margin: 0 10rem 10rem 10rem;
 }

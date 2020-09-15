@@ -10,9 +10,10 @@ class PhotoModal extends PureComponent {
     this.state = {
       editToggled: false,
       displayDate: this.props.photoDate,
-      month: "",
+/*       month: "",
       day: "",
-      year: "",
+      year: "", */
+      date: this.props.photoDate,
       error: ""
     };
 
@@ -37,10 +38,9 @@ class PhotoModal extends PureComponent {
   }
 
   saveNewDate(evt) {
-    console.log("SAVE TIME. ORIGINAL DATE: ", this.state.displayDate);
     evt.preventDefault();
     let validSave = true
-    let saveYear = this.state.year;
+/*     let saveYear = this.state.year;
     let saveMonth = this.state.month;
     let saveDay = this.state.day;
 
@@ -59,7 +59,8 @@ class PhotoModal extends PureComponent {
     if (saveDay.length === 1) {
       saveDay = "0".concat(saveDay);
     }
-    const newPhotoDate = saveYear.concat('-', saveMonth, '-', saveDay);
+    const newPhotoDate = saveYear.concat('-', saveMonth, '-', saveDay); */
+    const newPhotoDate = this.state.date;
 
     if (!moment(newPhotoDate).isValid()) {
       validSave = false
@@ -93,17 +94,21 @@ class PhotoModal extends PureComponent {
       
       this.setState({
         editToggled: false,
-        month: "",
+/*         month: "",
         day: "",
-        year: ""
+        year: "" */
+        displayDate: newPhotoDate,
+        date: newPhotoDate
       });
     } else {
       this.setState({
         editToggled: false,
-        month: "",
+/*         month: "",
         day: "",
-        year: "",
-        error: "Invalid date"
+        year: "", */
+        displayDate: this.props.photoDate,
+        date: this.props.photoDate,
+        error: "Invalid date entered"
       });
     }
   } 
@@ -118,10 +123,20 @@ class PhotoModal extends PureComponent {
     this.closeEditForm();
     this.props.handlePhotoDateChange();
     this.props.onClose();
+    this.setState({
+      editToggled: false,
+      displayDate: "",
+/*       month: "",
+      day: "",
+      year: "", */
+      date: "",
+      error: ""
+    });
   }
 
   handleChange(e) {
     const formValues = e.target.value;
+    console.log("FORM VALUES: ", formValues);
     this.setState({
       [e.target.name]: formValues
     });
@@ -130,9 +145,11 @@ class PhotoModal extends PureComponent {
   handleCancel() {
     this.setState({
       editToggled: false,
-      month: "",
+/*       month: "",
       day: "",
-      year: ""
+      year: "" */
+      displayDate: this.props.photoDate,
+      date: this.props.photoDate
     });
   }
 
@@ -159,7 +176,7 @@ class PhotoModal extends PureComponent {
     </div>
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
-      <div className="col">
+ {/*      <div className="col">
         <label htmlFor="month">Month</label>
         <select defaultValue={moment(photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="month" id="month">
           {monthSelectArray}
@@ -174,8 +191,11 @@ class PhotoModal extends PureComponent {
       <div className="col">
         <label htmlFor="year">Year</label>
         <input className="form-control form-control-sm" type="text" name="year" id="year" onChange={this.handleChange} placeholder={moment(photoDate).format("YYYY")} />
-      </div>
+      </div> */}
       <div className="col">
+        <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
+      </div>
+      <div className="col" id="photo-form-btn">
         <button className="btn btn-dark" type="submit">Save</button>
       </div>
       <div className="col">
@@ -205,7 +225,7 @@ class PhotoModal extends PureComponent {
               </button>
               </div>
               <div className="modal-body">
-                <img className="full-size-photo" src={fullPhoto} alt="" />
+                <img className="full-size-photo img-fluid" src={fullPhoto} alt="" />
               </div>
               <div className="modal-footer">
                 {this.state.error ? errorMessage: null}
