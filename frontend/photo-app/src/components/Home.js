@@ -2,6 +2,7 @@ import React, { PureComponent } from "react";
 import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
+import moment from 'moment';
 import Upload from "./Upload";
 import Year from "./Year";
 import PhotoModal from './PhotoModal';
@@ -77,12 +78,14 @@ class Home extends PureComponent {
   }
 
   showPhotoModal(photoData) {
+    const photoDateStrip = photoData.date_taken.split('T')[0];
+    
     this.setState({
       showModal: true,
       photoId: photoData.photo_id,
       photoFilename: photoData.filename,
       fullSizeLoc: photoData.full_size_loc,
-      fullSizeDate: photoData.date_taken
+      fullSizeDate: photoDateStrip ? photoDateStrip : photoData.date_taken
     });
     // Add 'modal-open'class on open so scroll bar will be removed and scrolling locked on body
     document.body.classList.add('modal-open');
@@ -90,7 +93,6 @@ class Home extends PureComponent {
   }
 
   handleModalClose() {
-    console.log("HANDLE MODAL CLOSE");
     this.setState({
       showModal: false,
       fullSizeLoc: "",
