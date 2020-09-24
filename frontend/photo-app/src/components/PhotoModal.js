@@ -161,6 +161,7 @@ class PhotoModal extends PureComponent {
 
 
   render() {
+    console.log("PHOTODATE FROM PROPS: ", this.props.photoDate);
     console.log("PHOTO MODAL STATE: ", this.state);
     const {show, fullPhoto, photoDate} = this.props;
 

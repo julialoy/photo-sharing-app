@@ -18,6 +18,7 @@ class Signin extends Component {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
+    this.handleCloseErrorMsg = this.handleCloseErrorMsg.bind(this);
   }
 
 /*   static propTypes = {
@@ -53,6 +54,7 @@ class Signin extends Component {
       email: '',
       password: '',
       signInErrors: err,
+      errorMsg: '',
       redirectToReferrer: true
     });
   }
@@ -83,12 +85,25 @@ class Signin extends Component {
           console.log(response.data)
 
           this.handleIndexRedirect();
+        } else if (!response.data.logged_in) {
+          this.setState({
+            email: "",
+            password: "",
+            errorMsg: "That username or password was incorrect"
+          });
         }
       })
       .catch(error => {
         console.log("login error:", error);
         this.handleResetOnError(error);
       });
+  }
+
+  handleCloseErrorMsg() {
+    this.setState({
+      errorMsg: "",
+      signInErrors: ""
+    });
   }
 
   render() {
@@ -98,15 +113,24 @@ class Signin extends Component {
       password,
     } = this.state;
 
+    const errorDiv = <div className="alert alert-danger alert-dismissible fade show" role="alert">
+      That username or password is incorrect.
+      <button type="button" className="close" data-dissmiss="alert" aria-label="Close" onClick={this.handleCloseErrorMsg}>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+
     if (this.props.isAuthed === true) {
       return <Redirect to='/' />
     }
+    console.log("LOGIN STATE?:", this.state);
     
     return (
       <div id="loginBody" className="text-center">
         <form id="loginForm" className="form-signin" onSubmit={this.handleSubmit}>
           <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="72" height="72"/>
           <h1 className="h4 mb-3 font-weight-normal">Please log in</h1>
+          { this.state.errorMsg ? errorDiv : null }
           <label htmlFor="inputEmail" className="sr-only">Email address</label>
           <input type="email" id="inputEmail" className="form-control" placeholder="Email" name="email" value={email} onChange={this.handleChange} required autoFocus />
           <label htmlFor="inputPassword" className="sr-only">Password</label>
