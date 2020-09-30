@@ -57,6 +57,10 @@ body.modal-open {
   margin-left: 1em;
 }
 
+#date-edit-btn {
+  margin-left: 1em;
+}
+
 /** PHOTO STREAM **/
 .year {
   margin: 1em;

@@ -24,6 +24,7 @@ class PhotoModal extends PureComponent {
     this.handleChange = this.handleChange.bind(this);
     this.handleCancel = this.handleCancel.bind(this);
     this.handleCloseError = this.handleCloseError.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
   }
 
   static propTypes = {
@@ -111,7 +112,14 @@ class PhotoModal extends PureComponent {
         error: "Invalid date entered"
       });
     }
-  } 
+  }
+  
+  handleKeyDown(e) {
+    console.log("KEY DOWN: ", e.keyCode);
+    if (e.keyCode === 27) {
+      this.handleModalClose();
+    }
+  };
 
   closeEditForm() {
     this.setState({
@@ -132,6 +140,7 @@ class PhotoModal extends PureComponent {
       date: "",
       error: ""
     });
+    window.removeEventListener('keydown', this.handleKeyDown);
   }
 
   handleChange(e) {
@@ -159,7 +168,6 @@ class PhotoModal extends PureComponent {
     });
   }
 
-
   render() {
     console.log("PHOTODATE FROM PROPS: ", this.props.photoDate);
     console.log("PHOTO MODAL STATE: ", this.state);
@@ -173,7 +181,7 @@ class PhotoModal extends PureComponent {
 
     const photoDateDiv = <div className="photo-date">
       {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
-      <button className="btn btn-dark" onClick={this.toggleEditForm}>Edit</button>
+      <button className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
     </div>
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
@@ -211,6 +219,10 @@ class PhotoModal extends PureComponent {
       {this.state.error}
     </div>
 
+    if (show) {
+      window.addEventListener('keydown', this.handleKeyDown);
+    }
+
     if (!show) {
       return null;
     }
@@ -225,7 +237,7 @@ class PhotoModal extends PureComponent {
                   x
               </button>
               </div>
-              <div className="modal-body">
+              <div className="modal-body text-center">
                 <img className="full-size-photo img-fluid" src={fullPhoto} alt="" />
               </div>
               <div className="modal-footer">
