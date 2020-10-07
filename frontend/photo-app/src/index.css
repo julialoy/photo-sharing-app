@@ -76,11 +76,24 @@ body.modal-open {
 }
 
 /** UPLOAD **/
+
+.upload-field {
+  margin-bottom: 1em;
+}
+
 .dropzone {
   border: 2px dashed gray;
   background-color: lightgray;
   height: 500px;
   width: 500px;
+}
+
+.upload-thumb {
+  max-width: 120px;
+  max-height: 120px;
+  border-radius: 10px;
+  margin: 0 0.25em 0.25em 0.25em;
+  display: block;
 }
 
 /** LOGIN AND REGISTRATION **/

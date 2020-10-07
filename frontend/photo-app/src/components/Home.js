@@ -12,8 +12,10 @@ class Home extends PureComponent {
     super(props);
 
     this.state = {
-      showModal: false,
+      showUploadModal: false,
+      showPhotoModal: false,
       photoId: "",
+      photoFilename: "",
       fullSizeLoc: "",
       fullSizeDate: ""
     };
@@ -23,8 +25,10 @@ class Home extends PureComponent {
     this.handleUploadRedirect = this.handleUploadRedirect.bind(this);
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
     this.showPhotoModal = this.showPhotoModal.bind(this);
-    this.handleModalClose = this.handleModalClose.bind(this);
+    this.handlePhotoModalClose = this.handlePhotoModalClose.bind(this);
     this.handleCompletePhotoUpload = this.handleCompletePhotoUpload.bind(this);
+    this.showUploadModal = this.showUploadModal.bind(this);
+    this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
   }
 
   static propTypes = {
@@ -77,11 +81,27 @@ class Home extends PureComponent {
     }
   }
 
+  showUploadModal() {
+    // Lock scrolling on body component
+    this.setState({
+      showUploadModal: true
+    });
+    document.body.classList.add('modal-open');
+  }
+
+  handleUploadModalClose() {
+    this.setState({
+      showUploadModal: false
+    });
+    // Allow scrolling on body component
+    document.body.classList.remove('modal-open');
+  }
+
   showPhotoModal(photoData) {
     const photoDateStrip = photoData.date_taken.split('T')[0];
     
     this.setState({
-      showModal: true,
+      showPhotoModal: true,
       photoId: photoData.photo_id,
       photoFilename: photoData.filename,
       fullSizeLoc: photoData.full_size_loc,
@@ -92,9 +112,11 @@ class Home extends PureComponent {
     console.log("showPhotoModal toggled: ", photoData.full_size_loc);
   }
 
-  handleModalClose() {
+  handlePhotoModalClose() {
     this.setState({
-      showModal: false,
+      showPhotoModal: false,
+      photoId: "",
+      photoFilename: "",
       fullSizeLoc: "",
       fullSizeDate: ""
     });
@@ -118,7 +140,7 @@ class Home extends PureComponent {
     console.log("LOGGED IN?", isAuthed);
     console.log("PHOTOS: ", photos);
     console.log("HAVE PHOTOS? ", havePhotos);
-    console.log("SHOULD MODAL SHOW?", this.state.showModal);
+    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal);
 
     if (!isAuthed) {
       this.handleLoginRedirect();
@@ -162,8 +184,9 @@ class Home extends PureComponent {
                     </li>
                     <li className="nav-item">
                       <Link 
-                        to="/upload" 
+                        to="/" 
                         className="nav-link"
+                        onClick={this.showUploadModal}
                       >
                         Upload
                       </Link>
@@ -199,24 +222,31 @@ class Home extends PureComponent {
           </header>
         </div>
         <div className="container-fluid">
+        <Upload 
+          isAuthed={isAuthed}
+          show={this.state.showUploadModal}
+          completePhotoUpload={this.handleCompletePhotoUpload}
+          currentUser={currentUser}
+          onClose={this.handleUploadModalClose}
+        />
         <PhotoModal 
-          show={this.state.showModal}
+          show={this.state.showPhotoModal}
           photoId={this.state.photoId}
           photoName={this.state.photoFilename}
           fullPhoto={this.state.fullSizeLoc}
           photoDate={this.state.fullSizeDate} 
-          onClose={this.handleModalClose}
+          onClose={this.handlePhotoModalClose}
           handlePhotoDateChange={this.props.handlePhotoDateChange} 
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
-          <Switch>
+{/*           <Switch>
             <Route 
               path={"/upload"}
               render={props => (
                 <Upload {...props} isAuthed={isAuthed} completePhotoUpload={this.handleCompletePhotoUpload} currentUser={currentUser} />
               )}
             />
-          </Switch>
+          </Switch> */}
         </div>
       </BrowserRouter>
     )

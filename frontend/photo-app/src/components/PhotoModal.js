@@ -119,7 +119,7 @@ class PhotoModal extends PureComponent {
     if (e.keyCode === 27) {
       this.handleModalClose();
     }
-  };
+  }
 
   closeEditForm() {
     this.setState({
@@ -234,7 +234,7 @@ class PhotoModal extends PureComponent {
           <div>
             <div className="modal-header">
               <button className="close" onClick={this.handleModalClose}>
-                  x
+                  <span>&times;</span>
               </button>
               </div>
               <div className="modal-body text-center">
