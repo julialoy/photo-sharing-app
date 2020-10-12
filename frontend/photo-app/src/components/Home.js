@@ -239,14 +239,6 @@ class Home extends PureComponent {
           handlePhotoDateChange={this.props.handlePhotoDateChange} 
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
-{/*           <Switch>
-            <Route 
-              path={"/upload"}
-              render={props => (
-                <Upload {...props} isAuthed={isAuthed} completePhotoUpload={this.handleCompletePhotoUpload} currentUser={currentUser} />
-              )}
-            />
-          </Switch> */}
         </div>
       </BrowserRouter>
     )

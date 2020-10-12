@@ -130,7 +130,7 @@ class Upload extends Component {
           console.log("Something unexpected happened!");
           this.props.completePhotoUpload(false);
           this.setState({
-            errorMsg: "Something went wrong."
+            errorMsg: "Unable to upload files. Something went wrong."
           });
         }
       })
@@ -169,24 +169,28 @@ class Upload extends Component {
               <span>&times;</span>
             </button>
           </div>
-          <div className="modal-body">
+          <div className="modal-body container">
+            {this.state.successMsg ? successAlert : null}
+            {this.state.errorMsg ? errorAlert : null}
             <div className="upload-field row">
             <Dropzone onDrop={this.handleDrop}>
                 {({ getRootProps, getInputProps }) => (
-                  <div className="col">
+                  <div className="row">
                     <div {...getRootProps({ className: "dropzone" })}>
                       <input {...getInputProps()} />
                       <p>Drag and drop files to upload</p>
+                      <p>
                         {this.state.files.map(file => (
-                            <img key={file.fileName} className="upload-thumb" src={file.preview} alt="" />
+                          <img key={file.fileName} className="upload-thumb" src={file.preview} alt="" />
                         ))}
+                      </p>
                     </div>
                   </div>
                 )}
               </Dropzone>
               <div className="file-list col">
                 <strong>Files:</strong>
-                <ul>
+                <ul id="thumb-list">
                   {this.state.files.map(file => (
                     <li key={file.fileName}>
                       {file.fileName} <button className="close" type="button" key={file.filename + "-btn"} id="thumb-delete-btn"><span key={file.filename + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>&times;</span></button>
@@ -195,9 +199,8 @@ class Upload extends Component {
                 </ul>
               </div>
             </div>
-            <button className="btn btn-dark" type="submit" onClick={this.handleUpload}>Upload</button>
-            {this.state.successMsg ? successAlert : null}
-            {this.state.errorMsg ? errorAlert : null}
+            <button className="btn btn-dark" type="submit" onClick={this.handleUpload} id="upload-submit-btn">Upload</button>
+            <button className="btn btn-dark" type="button" onClick={this.handleDropzoneReset} id="upload-clear-btn">Clear All</button>
           </div>
         </div>
       </div>

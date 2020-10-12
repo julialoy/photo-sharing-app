@@ -66,6 +66,10 @@ body.modal-open {
   margin: 1em;
 }
 
+.my-gallery-class {
+  margin-left: 2em;
+}
+
 .image-element-class {
   margin-bottom: 2px;
 }
@@ -86,6 +90,7 @@ body.modal-open {
   background-color: lightgray;
   height: 500px;
   width: 500px;
+  margin-left: 2.3em;
 }
 
 .upload-thumb {
@@ -93,7 +98,27 @@ body.modal-open {
   max-height: 120px;
   border-radius: 10px;
   margin: 0 0.25em 0.25em 0.25em;
-  display: block;
+}
+
+#thumb-close {
+  position: absolute;
+  z-index: 1000;
+  top: 7;
+  left: 2;
+}
+#thumb-list {
+  list-style: none;
+}
+
+#upload-submit-btn,
+#upload-clear-btn {
+  margin-right: 0.5em;
+  margin-left: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.file-list {
+  margin-left: 0.5em;
 }
 
 /** LOGIN AND REGISTRATION **/
