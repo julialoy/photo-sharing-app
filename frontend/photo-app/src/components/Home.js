@@ -221,7 +221,7 @@ class Home extends PureComponent {
             </nav>
           </header>
         </div>
-        <div className="container-fluid">
+        <div className="container-fluid" id="main-body">
         <Upload 
           isAuthed={isAuthed}
           show={this.state.showUploadModal}

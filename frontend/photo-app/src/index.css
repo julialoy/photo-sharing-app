@@ -11,7 +11,6 @@ body.modal-open {
 }
 
 /** NAV BAR **/
-
 .nav-link {
   border: none !important;
 }
@@ -62,25 +61,29 @@ body.modal-open {
 }
 
 /** PHOTO STREAM **/
-.year {
-  margin: 1em;
+#main-body {
+  padding-right: 1em;
 }
 
-.my-gallery-class {
-  margin-left: 2em;
+.year {
+  margin: 0.5em;
 }
 
 .image-element-class {
   margin-bottom: 2px;
 }
 
+video.image-element-class {
+  height: auto;
+  max-width: 300px;
+}
+
 .full-size-photo {
   max-width: 100%;
-  height: auto;
+  max-height: 80%;
 }
 
 /** UPLOAD **/
-
 .upload-field {
   margin-bottom: 1em;
 }
@@ -88,17 +91,32 @@ body.modal-open {
 .dropzone {
   border: 2px dashed gray;
   background-color: lightgray;
-  height: 500px;
-  width: 500px;
+  height: 31em;
+  width: 31em;
   margin-left: 2.3em;
 }
 
-.upload-thumb {
-  max-width: 120px;
-  max-height: 120px;
+.upload-thumb,
+.video-thumb {
+  max-width: 7.5em;
+  max-height: 7.5em;
   border-radius: 10px;
   margin: 0 0.25em 0.25em 0.25em;
 }
+
+.upload-para {
+  max-width: 8em;
+  max-height: 8em;
+  display: block;
+}
+/* #video-thumb,
+#video-thumb-source,
+#video-thumb-container {
+  max-width: 7.5em !important;
+  max-height: 7.5em !important;
+  border-radius: 10px !important;
+  margin: 0 0.25em 0.25em 0.25em;
+} */
 
 #thumb-close {
   position: absolute;

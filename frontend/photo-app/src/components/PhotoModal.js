@@ -171,8 +171,9 @@ class PhotoModal extends PureComponent {
   render() {
     console.log("PHOTODATE FROM PROPS: ", this.props.photoDate);
     console.log("PHOTO MODAL STATE: ", this.state);
-    const {show, fullPhoto, photoDate} = this.props;
+    const {show, photoName, fullPhoto, photoDate} = this.props;
 
+    const mediaType = photoName.split('.')[1];
     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
 
@@ -219,6 +220,12 @@ class PhotoModal extends PureComponent {
       {this.state.error}
     </div>
 
+    const imgElement = <img className="full-size-photo img-fluid" src={fullPhoto} alt="" />;
+    const videoElement = <video controls width="1000">
+      <source src={fullPhoto} type="video/mp4"/>
+      Sorry, your browser doesn't support this video format.
+    </video>;
+
     if (show) {
       window.addEventListener('keydown', this.handleKeyDown);
     }
@@ -238,7 +245,8 @@ class PhotoModal extends PureComponent {
               </button>
               </div>
               <div className="modal-body text-center">
-                <img className="full-size-photo img-fluid" src={fullPhoto} alt="" />
+                {/* <img className="full-size-photo img-fluid" src={fullPhoto} alt="" /> */}
+                {mediaType === "mp4" ? videoElement : imgElement}
               </div>
               <div className="modal-footer">
                 {this.state.error ? errorMessage: null}

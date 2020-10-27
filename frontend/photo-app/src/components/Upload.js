@@ -1,7 +1,7 @@
-import React, { Component, useEffect } from 'react';
+import React, { Component } from 'react';
 import { withRouter }  from 'react-router-dom';
 import PropTypes from 'prop-types';
-import Dropzone, { useDropzone } from 'react-dropzone';
+import Dropzone from 'react-dropzone';
 import axios from 'axios';
 
 class Upload extends Component {
@@ -23,6 +23,7 @@ class Upload extends Component {
     this.handleDropzoneReset = this.handleDropzoneReset.bind(this);
     this.handleCloseAlert = this.handleCloseAlert.bind(this);
     this.handleRemoveFromDrop = this.handleRemoveFromDrop.bind(this);
+    this.handleThumbRender = this.handleThumbRender.bind(this);
   }
 
   static propTypes = {
@@ -137,15 +138,35 @@ class Upload extends Component {
       .catch(err => console.log(err));
   }
 
+  handleThumbRender(filesArray) {
+    console.log("RENDER THUMBS FOR ", filesArray);
+    for (let x = 0; x < filesArray.length; x++) {
+      let currentFile = filesArray[x].fileName;
+      console.log("EXAMINE ", currentFile);
+      let fileExtension = filesArray[x].fileName.split('.')[1];
+      console.log("FILE EXTENSION: ", fileExtension);
+      if (fileExtension === 'mp4') {
+        return (
+          <span className="upload-thumb-container">
+            <video className="video-thumb" key={filesArray[x].fileName + "-video"}>
+              <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview}/>
+            </video>
+            {/* <canvas id="video-canvas-element"></canvas> */}
+          </span>
+        );
+      } else {
+        return <span className="upload-thumb-container"><img key={filesArray[x].fileName} className="upload-thumb" src={filesArray[x].preview} alt="" /></span>;
+      }
+    }
+  }
+
   render() {
     const {show, isAuthed} = this.props;
     const successAlert = <div className="alert alert-success alert-dismissible fade show" role="alert">
-    {this.state.successMsg}
-    <button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close"><span>&times;</span></button>
-    </div>;
-
+      {this.state.successMsg}
+      <button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close"><span>&times;</span></button>
+      </div>;
     const errorAlert = <div className="alert alert-danger alert-dismissible fade show" role="alert">{this.state.errorMsg}<button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close"><span>&times;</span></button></div>
-
     console.log("UPLOAD IS AUTHORIZED? ", isAuthed);
 
     if (!isAuthed) {
@@ -179,10 +200,11 @@ class Upload extends Component {
                     <div {...getRootProps({ className: "dropzone" })}>
                       <input {...getInputProps()} />
                       <p>Drag and drop files to upload</p>
-                      <p>
-                        {this.state.files.map(file => (
+                      <p className="upload-para"> 
+{/*                         {this.state.files.map(file => (
                           <img key={file.fileName} className="upload-thumb" src={file.preview} alt="" />
-                        ))}
+                        ))} */}
+                        {this.handleThumbRender(this.state.files)}
                       </p>
                     </div>
                   </div>
@@ -193,9 +215,10 @@ class Upload extends Component {
                 <ul id="thumb-list">
                   {this.state.files.map(file => (
                     <li key={file.fileName}>
-                      {file.fileName} <button className="close" type="button" key={file.filename + "-btn"} id="thumb-delete-btn"><span key={file.filename + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>&times;</span></button>
+                      {file.fileName} <button className="close" type="button" key={file.fileName + "-btn"} id="thumb-delete-btn"><span key={file.fileName + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>&times;</span></button>
                     </li>
                   ))}
+                  
                 </ul>
               </div>
             </div>
