@@ -47,7 +47,9 @@ class Year extends Component {
         {finalYearArray.map( year => (
           <div key={year}>
             <h3 id="photo-year">{year}</h3>
-            <Photos yearPhotos={photosByYears[year]} showPhotoModal={this.props.showPhotoModal} />
+            <div className="photo-year-div" key={year + "-photo-div"}>
+              <Photos yearPhotos={photosByYears[year]} showPhotoModal={this.props.showPhotoModal} />
+            </div>
           </div>
         ))}
 

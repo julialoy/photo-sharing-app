@@ -52,6 +52,10 @@ def parse_image_data(db_data):
     parsed_data = []
 
     for row in db_data:
+        NoneType = type(None)
+        full_size_loc = '../static/images/' + row[4] if len(row[4]) >= 1 else ''
+        web_size_loc = '../static/images/' + row[5] if type(row[5]) is not NoneType else full_size_loc
+        thumb_size_loc = '../static/images/' + row[6] if type(row[6]) is not NoneType else full_size_loc
         parsed_data.append({
             'photo_id': row[0],
             'album_id': row[2],
@@ -59,9 +63,9 @@ def parse_image_data(db_data):
             'filename': row[4],
             'web_size_filename': row[5],
             'thumbnail_filename': row[6],
-            'full_size_loc': '../static/images/' + row[4],
-            'web_size_loc': '../static/images/' + row[5],
-            'thumb_size_loc': '../static/images/' + row[6],
+            'full_size_loc': full_size_loc,
+            'web_size_loc': web_size_loc,
+            'thumb_size_loc': thumb_size_loc,
             'date_taken': row[8],
             'title': row[9],
             'description': row[10],
@@ -345,51 +349,89 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 print(f"Could not save image: {err}")
                 return web.json_response(data)
             else:
-                with open(os.path.join('static/images/', filename), 'wb') as f:
-                    image_contents = image_file.read()
-                    f.write(image_contents)
+                if image_type == 'mp4':
+                    with open(os.path.join('static/images/', filename), 'wb') as f:
+                        video_contents = image_file.read()
+                        f.write(video_contents)
 
-                # Get exif for date taken
-                img = Image.open(image_file)
-                exif_data = img.getexif()
-                creation_exif_date = exif_data.get(36867)
+                    # No exif for video files
+                    vid_creation_date = date.today()
 
-                if creation_exif_date is None:
-                    creation_date = date.today()
+                    # Resize for web and save
+                    # orig_vid_size = image_file.size
+                    # vid_width_percent = (300 / float(orig_vid_size[0]))
+                    # vid_new_height = int((float(orig_vid_size[1]) * float(vid_width_percent)))
+                    # web_resized_vid = image_file.resize((300, vid_new_height))
+                    # web_size_vid_filename = "web_" + filename
+                    # web_resized_vid.save('static/images/' + web_size_vid_filename, image_type.upper(), quality=95)
+
+                    # Create thumbnail and save
+                    # vid_thumb_size = 128, 128
+                    # vid_thumb_filename = "thumb_" + filename
+                    # img.thumbnail(thumb_size)
+                    # img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
+
+                    with sqlite3.connect(db) as conn:
+                        cur = conn.cursor()
+                        cur.execute("""
+                        UPDATE images
+                        SET date_taken=(?)
+                        WHERE user_id=(?)
+                        AND filename=(?)
+                        """, (vid_creation_date, current_user, filename))
+                        conn.commit()
+
+                    print(f"creation_date for {filename}: {vid_creation_date}")
+                    data['upload_successful'] = True
+
+                    counter += 1
                 else:
-                    date_portion = creation_exif_date.split(' ')[0]
-                    time_portion = creation_exif_date.split(' ')[1]
-                    creation_year = date_portion.split(':')[0]
-                    creation_month = date_portion.split(':')[1]
-                    creation_day = date_portion.split(':')[2]
-                    creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
-                # Resize for web and save
-                orig_size = img.size
-                width_percent = (300/float(orig_size[0]))
-                new_height = int((float(orig_size[1]) * float(width_percent)))
-                web_resized_img = img.resize((300, new_height))
-                web_size_filename = "web_" + filename
-                web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
+                    with open(os.path.join('static/images/', filename), 'wb') as f:
+                        image_contents = image_file.read()
+                        f.write(image_contents)
 
-                # Create thumbnail and save
-                thumb_size = 128, 128
-                thumb_filename = "thumb_" + filename
-                img.thumbnail(thumb_size)
-                img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
+                    # Get exif for date taken
+                    img = Image.open(image_file)
+                    exif_data = img.getexif()
+                    creation_exif_date = exif_data.get(36867)
 
-                with sqlite3.connect(db) as conn:
-                    cur = conn.cursor()
-                    cur.execute("""
-                    UPDATE images
-                    SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
-                    WHERE user_id=(?)
-                    AND filename=(?)
-                    """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
-                    conn.commit()
+                    if creation_exif_date is None:
+                        creation_date = date.today()
+                    else:
+                        date_portion = creation_exif_date.split(' ')[0]
+                        time_portion = creation_exif_date.split(' ')[1]
+                        creation_year = date_portion.split(':')[0]
+                        creation_month = date_portion.split(':')[1]
+                        creation_day = date_portion.split(':')[2]
+                        creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
 
-                print(f"creation_date for {filename}: {creation_date}")
-                data['upload_successful'] = True
+                    # Resize for web and save
+                    orig_size = img.size
+                    width_percent = (300/float(orig_size[0]))
+                    new_height = int((float(orig_size[1]) * float(width_percent)))
+                    web_resized_img = img.resize((300, new_height))
+                    web_size_filename = "web_" + filename
+                    web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
 
-                counter += 1
+                    # Create thumbnail and save
+                    thumb_size = 128, 128
+                    thumb_filename = "thumb_" + filename
+                    img.thumbnail(thumb_size)
+                    img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
+
+                    with sqlite3.connect(db) as conn:
+                        cur = conn.cursor()
+                        cur.execute("""
+                        UPDATE images
+                        SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
+                        WHERE user_id=(?)
+                        AND filename=(?)
+                        """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
+                        conn.commit()
+
+                    print(f"creation_date for {filename}: {creation_date}")
+                    data['upload_successful'] = True
+
+                    counter += 1
 
     return web.json_response(data)
