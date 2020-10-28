@@ -2,10 +2,10 @@ import React, { PureComponent } from "react";
 import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
-import moment from 'moment';
 import Upload from "./Upload";
 import Year from "./Year";
 import PhotoModal from './PhotoModal';
+import Settings from './UserSettings';
 
 class Home extends PureComponent {
   constructor(props) {
@@ -17,7 +17,8 @@ class Home extends PureComponent {
       photoId: "",
       photoFilename: "",
       fullSizeLoc: "",
-      fullSizeDate: ""
+      fullSizeDate: "",
+      showSettingsModal: false
     };
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
@@ -29,6 +30,8 @@ class Home extends PureComponent {
     this.handleCompletePhotoUpload = this.handleCompletePhotoUpload.bind(this);
     this.showUploadModal = this.showUploadModal.bind(this);
     this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
+    this.showSettingsModal = this.showSettingsModal.bind(this);
+    this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
   }
 
   static propTypes = {
@@ -79,6 +82,20 @@ class Home extends PureComponent {
     } else {
       console.log("Photo did not upload properly");
     }
+  }
+
+  showSettingsModal() {
+    this.setState({
+      showSettingsModal: true
+    });
+    document.body.classList.add('modal-open');
+  }
+
+  handleSettingsModalClose() {
+    this.setState({
+      showSettingsModal: false
+    });
+    document.body.classList.remove('modal-open');
   }
 
   showUploadModal() {
@@ -201,8 +218,9 @@ class Home extends PureComponent {
                     </li>
                     <li className="nav-item">
                       <Link 
-                        to="/settings" 
+                        to="/" 
                         className="nav-link"
+                        onClick={this.showSettingsModal}
                       >
                         Settings
                       </Link>
@@ -228,6 +246,12 @@ class Home extends PureComponent {
           completePhotoUpload={this.handleCompletePhotoUpload}
           currentUser={currentUser}
           onClose={this.handleUploadModalClose}
+        />
+        <Settings 
+          isAuthed={isAuthed}
+          show={this.state.showSettingsModal}
+          currentUser={currentUser}
+          onClose={this.handleSettingsModalClose}
         />
         <PhotoModal 
           show={this.state.showPhotoModal}
