@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import PropTypes from "prop-types";
 import Photos from './Photos';
 
-
 class Year extends Component {
   constructor(props) {
     super(props);
@@ -14,7 +13,6 @@ class Year extends Component {
   };
 
   render() {
-
     let yearArray = [];
     let finalYearArray = [];
     let photosByYears = {};
@@ -42,7 +40,6 @@ class Year extends Component {
     }
 
     return (
-      
       <div className="year grid">
         {finalYearArray.map( year => (
           <div key={year}>

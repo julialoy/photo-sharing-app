@@ -23,7 +23,7 @@ class Home extends PureComponent {
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
-    this.handleUploadRedirect = this.handleUploadRedirect.bind(this);
+/*     this.handleUploadRedirect = this.handleUploadRedirect.bind(this); */
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
     this.showPhotoModal = this.showPhotoModal.bind(this);
     this.handlePhotoModalClose = this.handlePhotoModalClose.bind(this);
@@ -48,9 +48,9 @@ class Home extends PureComponent {
     this.props.history.push("/login");
   }
 
-  handleUploadRedirect() {
+/*   handleUploadRedirect() {
     this.props.history.push("/upload");
-  }
+  } */
   
   handleLogout(evt) {
     evt.preventDefault();
@@ -64,7 +64,6 @@ class Home extends PureComponent {
       )
       .then(response => {
         if (response.data.log_out_successful) {
-          console.log("Log out successful ", response.data);
           this.props.handleSuccessfulLogOut(response.data);
           this.handleLoginRedirect();
         }
@@ -126,7 +125,6 @@ class Home extends PureComponent {
     });
     // Add 'modal-open'class on open so scroll bar will be removed and scrolling locked on body
     document.body.classList.add('modal-open');
-    console.log("showPhotoModal toggled: ", photoData.full_size_loc);
   }
 
   handlePhotoModalClose() {
@@ -154,10 +152,10 @@ class Home extends PureComponent {
       havePhotos
     } = this.props;
 
-    console.log("LOGGED IN?", isAuthed);
+/*     console.log("LOGGED IN?", isAuthed);
     console.log("PHOTOS: ", photos);
     console.log("HAVE PHOTOS? ", havePhotos);
-    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal);
+    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal); */
 
     if (!isAuthed) {
       this.handleLoginRedirect();

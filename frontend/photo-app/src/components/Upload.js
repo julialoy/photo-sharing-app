@@ -16,7 +16,6 @@ class Upload extends Component {
 
     this.handleDrop = this.handleDrop.bind(this);
     this.handleUpload = this.handleUpload.bind(this);
-    this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -88,11 +87,6 @@ class Upload extends Component {
     this.props.history.push("/login");
   }
 
-  handleIndexRedirect() {
-    console.log("NOW REDIRECT BACK TO THE INDEX");
-    this.props.history.push("/");
-  }
-
   handleDropzoneReset() {
     this.state.files.forEach(file => URL.revokeObjectURL(file.preview));
     this.setState({
@@ -102,15 +96,10 @@ class Upload extends Component {
 
   handleUpload(evt) {
     evt.preventDefault();
-    console.log("Send file data to backend");
-    console.log("FILE DATA: ", this.state.files);
-
     let imageData = new FormData();
-    console.log("FORM DATA BEFORE APPEND: ", imageData);
 
     for (let x= 0; x < this.state.files.length; x++) {
       imageData.append('image' + x, this.state.files[x].fileData);
-      console.log("APPENDING ", 'image', x, this.state.files[x].fileData);
     }
 
     axios.post("http://localhost:8080/upload",
@@ -118,9 +107,11 @@ class Upload extends Component {
       { withCredentials: true }
       )
       .then(response => {
-        console.log(response.data);
         if (response.data.error) {
-          console.log("There was a problem uploading your file: ", response.data.error);
+          this.setState({
+            errorMsg: "Unable to upload files. Something went wrong."
+          });
+          console.log("ERROR UPLOADING: ", response.data.error);
         } else if (response.data.upload_successful) {
           this.props.completePhotoUpload(true);
           this.setState({
@@ -128,7 +119,6 @@ class Upload extends Component {
           });
           this.handleDropzoneReset();
         } else {
-          console.log("Something unexpected happened!");
           this.props.completePhotoUpload(false);
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
@@ -139,19 +129,14 @@ class Upload extends Component {
   }
 
   handleThumbRender(filesArray) {
-    console.log("RENDER THUMBS FOR ", filesArray);
     for (let x = 0; x < filesArray.length; x++) {
-      let currentFile = filesArray[x].fileName;
-      console.log("EXAMINE ", currentFile);
       let fileExtension = filesArray[x].fileName.split('.')[1];
-      console.log("FILE EXTENSION: ", fileExtension);
       if (fileExtension === 'mp4') {
         return (
           <span className="upload-thumb-container">
             <video className="video-thumb" key={filesArray[x].fileName + "-video"}>
               <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview}/>
             </video>
-            {/* <canvas id="video-canvas-element"></canvas> */}
           </span>
         );
       } else {
@@ -166,8 +151,12 @@ class Upload extends Component {
       {this.state.successMsg}
       <button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close"><span>&times;</span></button>
       </div>;
-    const errorAlert = <div className="alert alert-danger alert-dismissible fade show" role="alert">{this.state.errorMsg}<button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close"><span>&times;</span></button></div>
-    console.log("UPLOAD IS AUTHORIZED? ", isAuthed);
+    const errorAlert = <div className="alert alert-danger alert-dismissible fade show" role="alert">
+      {this.state.errorMsg}
+      <button type="button" className="close" onClick={this.handleCloseAlert} aria-label="close">
+      <span>&times;</span>
+      </button>
+      </div>;
 
     if (!isAuthed) {
       this.handleLoginRedirect();
@@ -181,7 +170,6 @@ class Upload extends Component {
       return null;
     }
 
-    console.log("UPLOAD STATE: ", this.state);
     return (
       <div className="modal-backdrop">
         <div className="modal" display="block" id="upload-modal">
@@ -201,9 +189,6 @@ class Upload extends Component {
                       <input {...getInputProps()} />
                       <p>Drag and drop files to upload</p>
                       <p className="upload-para"> 
-{/*                         {this.state.files.map(file => (
-                          <img key={file.fileName} className="upload-thumb" src={file.preview} alt="" />
-                        ))} */}
                         {this.handleThumbRender(this.state.files)}
                       </p>
                     </div>

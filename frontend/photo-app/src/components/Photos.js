@@ -51,17 +51,7 @@ class Photos extends Component {
   }
 
   render() {
-/*     const childElements = this.props.yearPhotos.map(photo => (
-        <img 
-          className="image-element-class" 
-          key={photo.filename} 
-          src={photo.web_size_loc} 
-          alt="" 
-          onClick={() => this.props.showPhotoModal(photo)}
-        />
-    )); */
     const childElements = this.createChildElements(this.props.yearPhotos);
-
     return (
       <Masonry
         className={'my-gallery-class'}

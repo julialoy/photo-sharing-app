@@ -28,10 +28,9 @@ class App extends PureComponent {
   }
 
   checkLoginStatus() {
+    console.log("CHECKING LOG IN STATUS");
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
-      console.log(response.data)
-      console.log(response.data.is_logged_in);
       if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
         this.handleSuccessfulAuth(response.data);
         this.retrievePhotos();
@@ -51,7 +50,6 @@ class App extends PureComponent {
   retrievePhotos() {
     axios.get("http://localhost:8080/", { withCredentials: true })
     .then(data => {
-      console.log("INDEX PHOTO DATA: ", data);
       if (data.data) {
         if (data.data.length > 0) {
           this.setState( () => ({
@@ -69,6 +67,7 @@ class App extends PureComponent {
   }
 
   handleSuccessfulAuth(data) {
+    console.log("SUCCESSFUL AUTH DATA: ", data)
     this.setState(() => ({
       current_user: {
         id: data.user_id,
@@ -89,13 +88,11 @@ class App extends PureComponent {
   }
   
   componentDidMount() {
+    console.log("COMPONENT DID MOUNT");
     this.checkLoginStatus();
   }
 
   render() { 
-    if (this.state.havePhotos) {
-      console.log("APP HAS ACCESS TO PHOTOS: ", this.state.photos);
-    }
     return (
         <BrowserRouter>
           <Switch>

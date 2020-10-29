@@ -201,13 +201,14 @@ async def registration_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/logged_in")
 async def logged_in_handler(request: web.Request) -> web.json_response:
-    data = {"username": None, "is_logged_in": False}
+    data = {"user_id": None, "username": None, "is_logged_in": False}
     session = await get_session(request)
     print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
     if valid_auth_token:
         data["is_logged_in"] = True
         data["username"] = session["username"]
+        data["user_id"] = session["user_id"]
     return web.json_response(data)
 
 

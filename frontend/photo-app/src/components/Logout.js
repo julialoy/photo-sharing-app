@@ -32,7 +32,6 @@ class Logout extends Component {
       )
       .then(response => {
         if (response.data.log_out_successful) {
-          console.log("Log out successful ", response.data);
           this.props.handleSuccessfulLogOut(response.data);
           this.handleLoginRedirect();
         }
