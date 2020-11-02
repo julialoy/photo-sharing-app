@@ -14,6 +14,7 @@ class App extends PureComponent {
       current_user: {
         id: null,
         username: '',
+        accessLevel: null,
         isAuthenticated: false
       },
       photos: [],
@@ -39,6 +40,7 @@ class App extends PureComponent {
           current_user: {
             id: null,
             username: '',
+            accessLevel: null,
             isAuthenticated: false
           }
         }));
@@ -72,6 +74,7 @@ class App extends PureComponent {
       current_user: {
         id: data.user_id,
         username: data.username,
+        accessLevel: data.access_level,
         isAuthenticated: true
       }
     }));
@@ -82,6 +85,7 @@ class App extends PureComponent {
       current_user: {
         is: null,
         username: '',
+        accessLevel: null,
         isAuthenticated: false
       }
     }));

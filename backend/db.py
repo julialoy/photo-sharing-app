@@ -9,6 +9,12 @@ from aiohttp import web
 
 DATABASE = 'photo_user.sqlite3'
 
+# users access levels:
+# primary -> can upload, download, delete, edit date and tags, enter title and description, invite friends/family, edit
+# collaborator's permissions to restrict activity
+# collaborator -> can upload, delete, download, edit date and tags, enter title and description, invite friends/family
+# viewer -> can view photos, download
+# restricted -> can view certain photos, cannot download
 
 @dataclass
 class User:
@@ -37,7 +43,6 @@ def create_users_db() -> None:
     sqlite_db = get_db_path()
     if sqlite_db.exists():
         print("DATABASE EXISTS")
-        #print(sqlite_db)
         try:
             with sqlite3.connect(sqlite_db) as conn:
                 cur = conn.cursor()
@@ -100,4 +105,36 @@ def create_images_db() -> None:
             FOREIGN KEY (user_id) REFERENCES users(id)
             )"""
         )
+        conn.commit()
+
+
+def create_invites_db() -> None:
+    print("CREATING INVITES DATABASE")
+    sqlite_db = get_db_path()
+    if sqlite_db.exists():
+        print("DATABASE EXISTS")
+        try:
+            with sqlite3.connect(sqlite_db) as conn:
+                cur = conn.cursor()
+                cur.execute("""
+                SELECT * from invites
+                """)
+            print("TABLE INVITES EXISTS")
+            return
+        except sqlite3.DatabaseError as err:
+            print(f"DatabaseError: {err}")
+
+    with sqlite3.connect(sqlite_db) as conn:
+        print("SET UP THE INVITES TABLE")
+        cur = conn.cursor()
+        cur.execute("""
+        CREATE TABLE invites (
+        id INTEGER PRIMARY KEY,
+        invited_by INTEGER,
+        invite_email TEXT,
+        invite_code TEXT,
+        invite_expires DATE,
+        access_level TEXT,
+        FOREIGN KEY (invited_by) REFERENCES users(id)
+        )""")
         conn.commit()

@@ -138,7 +138,7 @@ class PhotoModal extends PureComponent {
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
     const photoDateDiv = <div className="photo-date">
       {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
-      <button className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
+      <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
     </div>
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>

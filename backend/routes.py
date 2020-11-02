@@ -2,8 +2,9 @@ import glob
 import os
 import io
 from pathlib import Path
-from datetime import date
+# from datetime import date
 import asyncio
+import datetime
 import json
 import sqlite3
 from typing import Awaitable, Callable
@@ -121,7 +122,7 @@ async def login_handler(request: web.Request) -> web.json_response:
     request_json = await json_handler(request)
     username = request_json['user']['email']
     password = request_json['user']['password']
-    data = {'logged_in': False, 'user_id': None, 'username': None}
+    data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
 
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
@@ -135,6 +136,7 @@ async def login_handler(request: web.Request) -> web.json_response:
                 data['logged_in'] = True
                 data['user_id'] = selected_user[0]
                 data['username'] = selected_user[1]
+                data['access_level'] = selected_user[3]
                 # Instead of username create temporary auth token for user upon login
                 # Store in database
                 # Put auth token in session
@@ -145,6 +147,7 @@ async def login_handler(request: web.Request) -> web.json_response:
                 session["username"] = username
                 session["user_id"] = selected_user[0]
                 session["auth_token"] = auth_token
+                session["access_level"] = selected_user[3]
                 session["logged_in"] = True
                 print(f"{session}")
                 cur.execute("""
@@ -201,7 +204,7 @@ async def registration_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/logged_in")
 async def logged_in_handler(request: web.Request) -> web.json_response:
-    data = {"user_id": None, "username": None, "is_logged_in": False}
+    data = {"user_id": None, "username": None, "access_level": None, "is_logged_in": False}
     session = await get_session(request)
     print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
@@ -209,6 +212,7 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
         data["is_logged_in"] = True
         data["username"] = session["username"]
         data["user_id"] = session["user_id"]
+        data["access_level"] = session["access_level"]
     return web.json_response(data)
 
 
@@ -235,6 +239,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
         session["user_id"] = None
         session["username"] = None
         session["auth_token"] = None
+        session["access_level"] = None
         session["logged_in"] = False
         data = {"log_out_successful": True}
     except sqlite3.DatabaseError as err:
@@ -284,6 +289,42 @@ async def edit_handler(request: web.Request) -> web.json_response():
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
+
+    return web.json_response(data)
+
+
+@router.post("/invite")
+@require_login
+async def invite_handler(request: web.Request) -> web.json_response():
+    data = {"invite_sent": False, "error": None}
+    session = await get_session(request)
+    current_user = session.get("user_id")
+    req_data = await json_handler(request)
+    print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
+    invite_email = req_data['invite']['email']
+    invite_access_level = req_data['invite']['accessLevel']
+    today = datetime.datetime.now(datetime.timezone.utc)
+    invite_expires = datetime.timedelta(weeks=2)
+    invite_expiry = today + invite_expires
+    invite_uuid = uuid4()
+    invite_code = invite_uuid.hex
+
+    # Write logic to not duplicate invites
+    # Write logic in db.py file to check for expired invites and delete the record on startup
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO invites (invited_by, invite_email, invite_code, invite_expires, access_level)
+            VALUES (?, ?, ?, ?, ?)
+            """, (current_user, invite_email, invite_code, invite_expiry, invite_access_level))
+            conn.commit()
+            data['invite_sent'] = True
+    except sqlite3.DatabaseError as err:
+        print(f"DATABASE ERROR: {err}")
+        data['error'] = "Unable to complete invite."
+
+    # Write logic to actually send the invite email
     return web.json_response(data)
 
 
@@ -293,7 +334,7 @@ async def edit_handler(request: web.Request) -> web.json_response():
 async def upload_handler(request: web.Request) -> web.json_response:
     data = {"upload_successful": False, "warnings": [], "error": None}
     session = await get_session(request)
-    current_user = session['user_id']
+    current_user = session.get("user_id")
     image_data = await request.post()
     counter = 0
     end_count = len(image_data)
