@@ -6,6 +6,7 @@ from typing import AsyncIterator, List
 
 import aiosqlite
 from aiohttp import web
+import datetime
 
 DATABASE = 'photo_user.sqlite3'
 
@@ -15,6 +16,7 @@ DATABASE = 'photo_user.sqlite3'
 # collaborator -> can upload, delete, download, edit date and tags, enter title and description, invite friends/family
 # viewer -> can view photos, download
 # restricted -> can view certain photos, cannot download
+
 
 @dataclass
 class User:
@@ -36,6 +38,18 @@ async def init_db(app: web.Application) -> AsyncIterator[None]:
     app["DB"] = db
     yield
     await db.close()
+
+
+def clean_invite_db(cursor) -> None:
+    today = str(datetime.datetime.now(datetime.timezone.utc))
+    print(f"CLEANING INVITE DATABASE FOR EXPIRY: {today} (type: {type(today)}")
+    try:
+        cursor.execute("""
+        DELETE FROM invites
+        WHERE invite_expires < (?)
+        """, (today,))
+    except sqlite3.DatabaseError as err:
+        print(f"ERROR CLEANING INVITES: {err}")
 
 
 def create_users_db() -> None:
@@ -119,7 +133,9 @@ def create_invites_db() -> None:
                 cur.execute("""
                 SELECT * from invites
                 """)
-            print("TABLE INVITES EXISTS")
+                print(f"TABLE INVITES EXISTS")
+                clean_invite_db(cur)
+                print(f"INVITE DATABASE CLEANED")
             return
         except sqlite3.DatabaseError as err:
             print(f"DatabaseError: {err}")

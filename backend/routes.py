@@ -310,7 +310,6 @@ async def invite_handler(request: web.Request) -> web.json_response():
     invite_code = invite_uuid.hex
 
     # Write logic to not duplicate invites
-    # Write logic in db.py file to check for expired invites and delete the record on startup
     try:
         with sqlite3.connect(db) as conn:
             cur = conn.cursor()
