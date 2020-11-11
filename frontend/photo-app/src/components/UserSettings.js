@@ -8,9 +8,10 @@ class Settings extends Component {
 
     this.state = {
       inviteEmail: "",
-      accessLevel: "",
+      accessLevel: "Friend/Family",
       errorMsg: "",
-      successMsg: ""
+      successMsg: "",
+      inviteCode: ""
     };
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
@@ -33,6 +34,13 @@ class Settings extends Component {
   }
 
   handleSettingsModalClose() {
+    this.setState({
+      inviteEmail: "",
+      accessLevel: "Friend/Family",
+      errorMsg: "",
+      successMsg: "",
+      inviteCode: ""
+    });
     this.props.onClose();
     window.removeEventListener('keydown', this.handleKeyDown);
   }
@@ -71,7 +79,8 @@ class Settings extends Component {
       console.log("INVITE RESPONSE: ", response.data);
       if (response.data.invite_sent) {
         this.setState({
-          successMsg: "Invite sent."
+          successMsg: `Success! Use this code to invite your family or friend: ${response.data.invite_code}.`,
+          inviteCode: response.data.invite_code
         });
       }
     })
@@ -80,13 +89,16 @@ class Settings extends Component {
 
   handleCloseError() {
     this.setState({
-      errorMsg: ""
+      errorMsg: "",
     });
   }
 
   handleCloseMsg() {
     this.setState({
-      successMsg: ""
+      inviteEmail: "",
+      accessLevel: "Friend/Family",
+      successMsg: "",
+      inviteCode: ""
     });
   }
 

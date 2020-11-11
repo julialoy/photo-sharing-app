@@ -130,6 +130,7 @@ class Signin extends Component {
             </label>
           </div>
           <button className="btn btn-lg btn-dark btn-block" type="submit" id="loginSubmit">Log in</button>
+          <p>Have an invite code? <a href="/register-invite">Go here.</a></p>
           <p>No account? <a href="/register">Register!</a></p>
         </form>
       </div>

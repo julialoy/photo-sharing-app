@@ -5,6 +5,7 @@ import Register from './Register.js';
 import Signin from './Signin.js';
 import axios from 'axios';
 import Logout from './Logout.js';
+import ConfirmInvite from './ConfirmInvite';
 
 class App extends PureComponent {
   constructor(props) {
@@ -135,6 +136,16 @@ class App extends PureComponent {
                   {...props} 
                   isAuthed={this.state.current_user.isAuthenticated} 
                   handleSuccessfulAuth={this.handleSuccessfulAuth} 
+                />
+              )}
+            />
+            <Route 
+              exact
+              path={"/register-invite"}
+              render={props => (
+                <ConfirmInvite 
+                  {...props}
+                  isAuthed={this.state.current_user.isAuthenticated}
                 />
               )}
             />

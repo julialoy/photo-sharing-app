@@ -1,17 +1,24 @@
-import glob
+# import glob
 import os
-import io
+# import io
 from pathlib import Path
 # from datetime import date
 import asyncio
 import datetime
+# from email.message import EmailMessage
 import json
+import random
 import sqlite3
+import string
+# from threading import Thread
 from typing import Awaitable, Callable
 from uuid import uuid4
 
 from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
+# from aiosmtplib import send
+# from aiosmtplib import SMTP
+# from aiosmtplib import SMTPTimeoutError
 from PIL import Image
 
 from db import DATABASE
@@ -78,6 +85,30 @@ def parse_image_data(db_data):
 def order_images(parsed_image_array):
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
     # print(f"Reordered array {parsed_image_array}")
+
+
+def generate_invite_code():
+    valid_letters = string.ascii_uppercase
+    generated_code = ''.join(random.choice(valid_letters) for i in range(5))
+    return generated_code
+
+
+# async def send_invite_email(sender, invite_email, invite_code) -> None:
+#     message = EmailMessage()
+#     message["From"] = "tuchka@gmail.com"
+#     message["To"] = "julialoy@gmail.com"
+#     message["Subject"] = "Test JL Photo App Invite"
+#     message_str = "{} has invited you to join the test photo app. Use code {} to join".format(sender, invite_code)
+#     message.set_content(message_str)
+#     await send(
+#         message,
+#         hostname="smtp.gmail.com",
+#         port=587,
+#         start_tls=True,
+#         username="",
+#         password="",
+#         timeout=30
+#     )
 
 
 @web.middleware
@@ -296,9 +327,10 @@ async def edit_handler(request: web.Request) -> web.json_response():
 @router.post("/invite")
 @require_login
 async def invite_handler(request: web.Request) -> web.json_response():
-    data = {"invite_sent": False, "error": None}
+    data = {"invite_sent": False, "invite_code": None, "error": None}
     session = await get_session(request)
     current_user = session.get("user_id")
+    # current_user_username = session.get("username")
     req_data = await json_handler(request)
     print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
     invite_email = req_data['invite']['email']
@@ -306,8 +338,14 @@ async def invite_handler(request: web.Request) -> web.json_response():
     today = datetime.datetime.now(datetime.timezone.utc)
     invite_expires = datetime.timedelta(weeks=2)
     invite_expiry = today + invite_expires
-    invite_uuid = uuid4()
-    invite_code = invite_uuid.hex
+    invite_code = generate_invite_code()
+
+    if invite_access_level is None or len(invite_access_level) == 0:
+        data['error'] = "Invalid access level. Please try again."
+        return web.json_response(data)
+    elif invite_email is None or len(invite_email) == 0:
+        data['error'] = "Invalid email. Please try again."
+        return web.json_response(data)
 
     # Write logic to not duplicate invites
     try:
@@ -319,12 +357,54 @@ async def invite_handler(request: web.Request) -> web.json_response():
             """, (current_user, invite_email, invite_code, invite_expiry, invite_access_level))
             conn.commit()
             data['invite_sent'] = True
+            data['invite_code'] = invite_code
     except sqlite3.DatabaseError as err:
         print(f"DATABASE ERROR: {err}")
         data['error'] = "Unable to complete invite."
 
-    # Write logic to actually send the invite email
+    # Send invite email
+    # try:
+    #     await send_invite_email(current_user_username, invite_email, invite_code)
+    #     data['invite_sent'] = True
+    # except SMTPTimeoutError as err:
+    #     print(f"RUNTIME ERROR: {err}")
+    #     data['invite_sent'] = False
+    # else:
+    #     print(f"OMG something happened")
+
     return web.json_response(data)
+
+
+@asyncio.coroutine
+@router.post("/register-invite")
+async def register_invite_handler(request: web.Request) -> web.json_response:
+    print(f"REGISTER THE INVITE")
+    data = {"invite_redeemed": False, "error": None}
+    invite_confirm_data = await json_handler(request)
+    invitee_email = invite_confirm_data["inviteInfo"]["email"]
+    invitee_code = invite_confirm_data["inviteInfo"]["code"]
+    print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            SELECT * FROM invites
+            WHERE invite_email=? and invite_code=?
+            """, (invitee_email, invitee_code))
+
+            for row in cur:
+                print(f"INVITES ROW: {row}")
+                tdy = datetime.datetime.now(datetime.timezone.utc)
+                if row[4] < tdy:
+                    data["error"] = "Invite code has expired."
+                    return data
+                else:
+                    data["invite_redeemed"] = True
+    except sqlite3.DatabaseError as err:
+        print(f"REDEEM INVITE ERROR: {err}")
+
+    return data
 
 
 @asyncio.coroutine
@@ -396,7 +476,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         f.write(video_contents)
 
                     # No exif for video files
-                    vid_creation_date = date.today()
+                    vid_creation_date = datetime.datetime.today()
 
                     # Resize for web and save
                     # orig_vid_size = image_file.size
@@ -437,7 +517,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     creation_exif_date = exif_data.get(36867)
 
                     if creation_exif_date is None:
-                        creation_date = date.today()
+                        creation_date = datetime.datetime.today()
                     else:
                         date_portion = creation_exif_date.split(' ')[0]
                         time_portion = creation_exif_date.split(' ')[1]

@@ -11,7 +11,7 @@ import aiohttp_cors
 
 from db import create_images_db, create_invites_db, create_users_db, get_db_path, init_db
 # from routes import check_login, error_middleware, username_ctx_processor, router
-from routes import edit_handler, index_handler, invite_handler, logged_in_handler, login_handler, logout_handler, registration_handler, router, upload_handler
+from routes import edit_handler, index_handler, invite_handler, logged_in_handler, login_handler, logout_handler, register_invite_handler, registration_handler, router, upload_handler
 
 fernet_key = b'7TRw6P1h4U9hUo6m9jja9YZ0Qg4RtVl2TD2u7CDOqt0='
 SECRET_KEY = base64.urlsafe_b64decode(fernet_key)
@@ -38,6 +38,7 @@ async def init_app(db_path: Path) -> web.Application:
     app.router.add_route("POST", "/upload", upload_handler)
     app.router.add_route("POST", "/edit", edit_handler)
     app.router.add_route("POST", "/invite", invite_handler)
+    app.router.add_route("POST", "/register-invite", register_invite_handler)
     app.router.add_static("/static", path=str(BASE_PATH / "static"), name="static")
     app.router.add_static("/images", path=str(BASE_PATH / "static/images"), name="images")
     app.cleanup_ctx.append(init_db)

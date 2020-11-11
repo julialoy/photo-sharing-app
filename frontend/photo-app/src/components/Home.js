@@ -206,14 +206,14 @@ class Home extends PureComponent {
                         Upload
                       </Link>
                     </li>
-                    <li className="nav-item">
+{/*                     <li className="nav-item">
                       <Link 
                         to="/activity" 
                         className="nav-link"
                       >
                         Activity
                       </Link>
-                    </li>
+                    </li> */}
                     <li className="nav-item">
                       <Link 
                         to="/" 
