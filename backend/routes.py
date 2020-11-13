@@ -84,7 +84,6 @@ def parse_image_data(db_data):
 
 def order_images(parsed_image_array):
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
-    # print(f"Reordered array {parsed_image_array}")
 
 
 def generate_invite_code():
@@ -168,9 +167,6 @@ async def login_handler(request: web.Request) -> web.json_response:
                 data['user_id'] = selected_user[0]
                 data['username'] = selected_user[1]
                 data['access_level'] = selected_user[3]
-                # Instead of username create temporary auth token for user upon login
-                # Store in database
-                # Put auth token in session
                 # Delete auth token after certain amount of time (or log out?)
                 # This will require user to log back in
                 auth_token = uuid4()
@@ -383,6 +379,8 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
     invite_confirm_data = await json_handler(request)
     invitee_email = invite_confirm_data["inviteInfo"]["email"]
     invitee_code = invite_confirm_data["inviteInfo"]["code"]
+    invitee_access_level = None
+    invited_by = None
     print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
 
     try:
@@ -401,10 +399,23 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
                     return data
                 else:
                     data["invite_redeemed"] = True
+                    invitee_access_level = row[5]
+                    invited_by = row[1]
     except sqlite3.DatabaseError as err:
         print(f"REDEEM INVITE ERROR: {err}")
 
-    return data
+    if data["invite_redeemed"]:
+        temp_password_uuid4 = uuid4()
+        temp_password = temp_password_uuid4.hex
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO users (username, password, access_level, linked_to)
+            VALUES (?, ?, ?, ?)
+            """, (invitee_email, temp_password, invitee_access_level, invited_by))
+            conn.commit()
+
+    return web.json_response(data)
 
 
 @asyncio.coroutine

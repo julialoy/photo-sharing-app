@@ -78,8 +78,10 @@ def create_users_db() -> None:
             username TEXT UNIQUE,
             password TEXT,
             access_level TEXT,
-            auth_token TEXT UNIQUE)
-            """
+            auth_token TEXT UNIQUE,
+            linked_to INTEGER,
+            FOREIGN KEY (linked_to) REFERENCES users(id)
+            )"""
         )
         conn.commit()
 
