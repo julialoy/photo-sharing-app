@@ -45,14 +45,14 @@ def image_to_db(user_id, album_id, child_id, filename, web_filename, thumbnail_f
         conn.commit()
 
 
-def retrieve_images(current_user_id):
+def retrieve_images(current_user_id, other_ids):
     print(f"IN RETRIEVE IMAGES {type(current_user_id)}")
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute("""
         SELECT * from images
-        WHERE user_id = ?
-        """, (current_user_id,))
+        WHERE user_id=(?) OR user_id=(?)
+        """, (current_user_id, other_ids))
         return cur
 
 
@@ -137,8 +137,25 @@ async def index_handler(request: web.Request) -> web.json_response:
     print(f"USERNAME: {username}")
     print(f"SESSION: {session}")
     user_id = session.get("user_id")
+    additional_id = None
     print(f"USER ID: {user_id}")
-    available_photos = retrieve_images(user_id)
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            SELECT * FROM users
+            WHERE id=(?)
+            """, (user_id,))
+
+            for row in cur:
+                additional_id = row[5]
+
+    except sqlite3.DatabaseError as err:
+        print(f"ERROR RETRIEVING USER: {err}")
+
+    print(f"ADDITIONAL IDs: {additional_id}")
+    available_photos = retrieve_images(user_id, additional_id)
     parsed_photos = parse_image_data(available_photos)
     order_images(parsed_photos)
     return web.json_response(parsed_photos)
