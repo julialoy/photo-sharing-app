@@ -150,8 +150,10 @@ async def login_handler(request: web.Request) -> web.json_response:
     print("FIND USER AND LOG IN")
     session = await new_session(request)
     request_json = await json_handler(request)
+    print(f"TRY TO LOG IN DATA: {request_json}")
     username = request_json['user']['email']
     password = request_json['user']['password']
+    print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
 
     with sqlite3.connect(db) as conn:
@@ -375,7 +377,8 @@ async def invite_handler(request: web.Request) -> web.json_response():
 @router.post("/register-invite")
 async def register_invite_handler(request: web.Request) -> web.json_response:
     print(f"REGISTER THE INVITE")
-    data = {"invite_redeemed": False, "error": None}
+    data = {"invite_redeemed": False, "error": None, "username": None, "user_id": None, "user_access_level": None}
+    session = await new_session(request)
     invite_confirm_data = await json_handler(request)
     invitee_email = invite_confirm_data["inviteInfo"]["email"]
     invitee_code = invite_confirm_data["inviteInfo"]["code"]
@@ -396,17 +399,26 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
                 print(f"INVITES ROW: {row}")
                 tdy = str(datetime.datetime.now(datetime.timezone.utc))
                 if row[4] < tdy:
+                    data["invite_redeemed"] = False
                     data["error"] = "Invite code has expired."
-                    return data
+                    return web.json_response(data)
                 else:
                     data["invite_redeemed"] = True
                     invitee_access_level = row[5]
                     invited_by = row[1]
                     invitee_key = row[0]
     except sqlite3.DatabaseError as err:
+        data["invite_redeemed"] = False
+        data["error"] = "There was a database error."
         print(f"REDEEM INVITE ERROR: {err}")
+    # else:
+    #     print(f"INVITE NOT FOUND")
+    #     data["invite_redeemed"] = False
+    #     data["error"] = "Invite not found."
+    #     return web.json_response(data)
 
     if data["invite_redeemed"]:
+        print(f"INVITE REDEEMED")
         temp_password_uuid4 = uuid4()
         temp_password = temp_password_uuid4.hex
         with sqlite3.connect(db) as conn:
@@ -415,12 +427,30 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             INSERT INTO users (username, password, access_level, linked_to)
             VALUES (?, ?, ?, ?)
             """, (invitee_email, temp_password, invitee_access_level, invited_by))
+            auth_token = uuid4()
+            auth_token = auth_token.hex
+            session["username"] = invitee_email
+            session["user_id"] = cur.lastrowid
+            session["auth_token"] = auth_token
+            session["access_level"] = invitee_access_level
+            session["logged_in"] = True
+            data["username"] = invitee_email
+            data["user_id"] = cur.lastrowid
+            data["user_access_level"] = invitee_access_level
+            print(f"{session}")
+            cur.execute("""
+            UPDATE users
+            SET auth_token = (?)
+            WHERE username = (?)
+            """, (auth_token, invitee_email))
+            conn.commit()
             cur.execute("""
             DELETE FROM invites
             WHERE id=?
             """, (invitee_key,))
             conn.commit()
 
+    print(f"INVITE DATA: {data}")
     return web.json_response(data)
 
 
@@ -428,7 +458,27 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
 @router.post("/reset-password")
 @require_login
 async def reset_password_handler(request: web.Request) -> web.json_response:
-    pass
+    data = {"password_reset_successful": False, "error": None}
+    session = await get_session(request)
+    password_data = await json_handler(request)
+    new_password = password_data["user"]["password"]
+    current_user_id = session.get("user_id")
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            UPDATE users
+            SET password=(?)
+            WHERE id=(?)
+            """, (new_password, current_user_id))
+            conn.commit()
+            data["password_reset_successful"] = True
+    except sqlite3.DatabaseError as err:
+        print(f"RESET PASSWORD ERROR: {err}")
+        data["error"] = "A database error occurred. Unable to reset password."
+
+    return web.json_response(data)
 
 
 @asyncio.coroutine

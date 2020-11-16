@@ -25,6 +25,15 @@ class ConfirmInvite extends Component {
   }
 
   handleIndexRedirect() {
+    this.setState({
+      email: "",
+      inviteCode: "",
+      inviteSucceeded: false,
+      password: "",
+      confirmPassword: "",
+      successMsg: "",
+      errorMsg: ""
+    });
     this.props.history.push("/");
   }
 
@@ -70,38 +79,7 @@ class ConfirmInvite extends Component {
         this.setState({
           inviteSucceeded: true,
           successMsg: "Confirmation succeeded!"
-        });
-        axios.post("http://localhost:8080/login",
-          {
-            user: {
-              email: email,
-              password: password
-            }
-          },
-          { withCredentials: true }
-        )
-        .then(response => {
-          if (response.data.logged_in) {
-            this.props.handleSuccessfulAuth(response.data);
-            this.handleIndexRedirect();
-          } else {
-            this.setState({
-              email: "",
-              inviteCode: "",
-              inviteSucceeded: false,
-              password: "",
-              confirmPassword: "",
-              successMsg: "",
-              errorMsg: "Something went wrong. Password not reset."
-            });
-          }
-        })
-        .catch(err => console.log(err));
-      } else {
-        console.log("INVITE CONFIRMATION DATA: ", response.data);
-        this.setState({
-          errorMsg: "Something went wrong"
-        });
+        });  
       }
     })
     .catch(error => {
@@ -124,8 +102,15 @@ class ConfirmInvite extends Component {
       .then(response => {
         if (response.data) {
           console.log("RESPONSE DATA");
+          this.setState({
+            successMsg: "Password sucessfully reset!"
+          });
+          setTimeout(this.handleIndexRedirect(), 2000);
         } else {
           console.log("SOMETHING WENT WRONG");
+          this.setState({
+            errorMsg: "Unable to reset password."
+          });
         }
       })
       .catch(err => console.log(err));
@@ -176,6 +161,8 @@ class ConfirmInvite extends Component {
 /*     if (this.props.isAuthed === true){
       return <Redirect to="/" />
     } */
+
+    console.log("CONFIRM INVITE STATE: ", this.state);
 
     return (
       <div id="confirmInviteBody" className="text-center">
