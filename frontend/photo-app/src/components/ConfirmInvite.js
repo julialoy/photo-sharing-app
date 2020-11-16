@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Redirect, withRouter } from "react-router-dom";
+import { withRouter } from "react-router-dom";
 import axios from "axios";
 
 class ConfirmInvite extends Component {
@@ -16,11 +16,16 @@ class ConfirmInvite extends Component {
       errorMsg: ""
     };
 
+    this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleCloseErrorMsg = this.handleCloseErrorMsg.bind(this);
     this.handleCloseSuccessMsg = this.handleCloseSuccessMsg.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handlePasswordSubmit = this.handlePasswordSubmit.bind(this);
+  }
+
+  handleIndexRedirect() {
+    this.props.history.push("/");
   }
 
   handleChange(evt) {
@@ -46,7 +51,8 @@ class ConfirmInvite extends Component {
     console.log("ACCEPT INVITE");
     const {
       email,
-      inviteCode
+      inviteCode,
+      password
     } = this.state;
 
     axios.post("http://localhost:8080/register-invite",
@@ -64,7 +70,33 @@ class ConfirmInvite extends Component {
         this.setState({
           inviteSucceeded: true,
           successMsg: "Confirmation succeeded!"
+        });
+        axios.post("http://localhost:8080/login",
+          {
+            user: {
+              email: email,
+              password: password
+            }
+          },
+          { withCredentials: true }
+        )
+        .then(response => {
+          if (response.data.logged_in) {
+            this.props.handleSuccessfulAuth(response.data);
+            this.handleIndexRedirect();
+          } else {
+            this.setState({
+              email: "",
+              inviteCode: "",
+              inviteSucceeded: false,
+              password: "",
+              confirmPassword: "",
+              successMsg: "",
+              errorMsg: "Something went wrong. Password not reset."
+            });
+          }
         })
+        .catch(err => console.log(err));
       } else {
         console.log("INVITE CONFIRMATION DATA: ", response.data);
         this.setState({
@@ -79,7 +111,25 @@ class ConfirmInvite extends Component {
 
   handlePasswordSubmit(evt) {
     evt.preventDefault();
-    console.log("PASSWORD SUBMIT");
+    if (this.state.password === this.state.confirmPassword) {
+      axios.post("http://localhost:8080/reset-password",
+        {
+          user: {
+            email: this.state.email,
+            password: this.state.password
+          }
+        },
+        { withCredentials: true }
+      )
+      .then(response => {
+        if (response.data) {
+          console.log("RESPONSE DATA");
+        } else {
+          console.log("SOMETHING WENT WRONG");
+        }
+      })
+      .catch(err => console.log(err));
+    }
   }
 
   render() {
@@ -120,12 +170,12 @@ class ConfirmInvite extends Component {
         <input type="password" id="inputPassword" className="form-control" placeholder="Password" name="password" value={password} onChange={this.handleChange} required autoFocus />
         <label htmlFor="confirmPassword" className="sr-only">Confirm password</label>
         <input type="password" id="confirmPassword" className="form-control" placeholder="Confirm password" name="confirmPassword" value={confirmPassword} onChange={this.handleChange} required />
-        <button className="btn btn-lg bnt-dark btn-block" type="submit" id="createPassword">Create password</button>
+        <button className="btn btn-lg btn-dark btn-block" type="submit" id="createPassword">Create password</button>
     </form>
     
-    if (this.props.isAuthed === true){
+/*     if (this.props.isAuthed === true){
       return <Redirect to="/" />
-    }
+    } */
 
     return (
       <div id="confirmInviteBody" className="text-center">

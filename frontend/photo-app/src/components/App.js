@@ -146,6 +146,7 @@ class App extends PureComponent {
                 <ConfirmInvite 
                   {...props}
                   isAuthed={this.state.current_user.isAuthenticated}
+                  handleSuccessfulAuth={this.handleSuccessfulAuth}
                 />
               )}
             />

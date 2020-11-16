@@ -381,6 +381,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
     invitee_code = invite_confirm_data["inviteInfo"]["code"]
     invitee_access_level = None
     invited_by = None
+    invitee_key = None
     print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
 
     try:
@@ -393,7 +394,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
 
             for row in cur:
                 print(f"INVITES ROW: {row}")
-                tdy = datetime.datetime.now(datetime.timezone.utc)
+                tdy = str(datetime.datetime.now(datetime.timezone.utc))
                 if row[4] < tdy:
                     data["error"] = "Invite code has expired."
                     return data
@@ -401,6 +402,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
                     data["invite_redeemed"] = True
                     invitee_access_level = row[5]
                     invited_by = row[1]
+                    invitee_key = row[0]
     except sqlite3.DatabaseError as err:
         print(f"REDEEM INVITE ERROR: {err}")
 
@@ -413,9 +415,20 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             INSERT INTO users (username, password, access_level, linked_to)
             VALUES (?, ?, ?, ?)
             """, (invitee_email, temp_password, invitee_access_level, invited_by))
+            cur.execute("""
+            DELETE FROM invites
+            WHERE id=?
+            """, (invitee_key,))
             conn.commit()
 
     return web.json_response(data)
+
+
+@asyncio.coroutine
+@router.post("/reset-password")
+@require_login
+async def reset_password_handler(request: web.Request) -> web.json_response:
+    pass
 
 
 @asyncio.coroutine
