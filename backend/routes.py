@@ -99,8 +99,8 @@ def generate_invite_code():
 
 # async def send_invite_email(sender, invite_email, invite_code) -> None:
 #     message = EmailMessage()
-#     message["From"] = "tuchka@gmail.com"
-#     message["To"] = "julialoy@gmail.com"
+#     message["From"] = sender
+#     message["To"] = invite_email
 #     message["Subject"] = "Test JL Photo App Invite"
 #     message_str = "{} has invited you to join the test photo app. Use code {} to join".format(sender, invite_code)
 #     message.set_content(message_str)
