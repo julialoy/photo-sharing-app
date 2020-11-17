@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import { Redirect, withRouter } from "react-router-dom";
-import PropTypes from "prop-types";
 import axios from "axios";
 
 class Signin extends Component {
@@ -20,12 +19,6 @@ class Signin extends Component {
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
     this.handleCloseErrorMsg = this.handleCloseErrorMsg.bind(this);
   }
-
-/*   static propTypes = {
-    handleSuccessfulAuth: PropTypes.func,
-    loggedInStatus: PropTypes.bool.isRequired,
-    checkLoginStatus: PropTypes.func
-  }; */
   
   handleIndexRedirect() {
     this.props.history.push("/");
@@ -39,7 +32,6 @@ class Signin extends Component {
 
   handleRedirect(authentication) {
     if (authentication === true) {
-      console.log("HANDLE REDIRECT THIS: ",this);
       this.setState({
         email: '',
         password: '',
@@ -82,8 +74,6 @@ class Signin extends Component {
       .then(response => {
         if (response.data.logged_in) {
           handleSuccessfulAuth(response.data);
-          console.log(response.data)
-
           this.handleIndexRedirect();
         } else if (!response.data.logged_in) {
           this.setState({
@@ -123,7 +113,6 @@ class Signin extends Component {
     if (this.props.isAuthed === true) {
       return <Redirect to='/' />
     }
-    console.log("LOGIN STATE?:", this.state);
     
     return (
       <div id="loginBody" className="text-center">
@@ -141,6 +130,7 @@ class Signin extends Component {
             </label>
           </div>
           <button className="btn btn-lg btn-dark btn-block" type="submit" id="loginSubmit">Log in</button>
+          <p>Have an invite code? <a href="/register-invite">Go here.</a></p>
           <p>No account? <a href="/register">Register!</a></p>
         </form>
       </div>

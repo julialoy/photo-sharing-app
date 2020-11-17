@@ -5,6 +5,7 @@ import Register from './Register.js';
 import Signin from './Signin.js';
 import axios from 'axios';
 import Logout from './Logout.js';
+import ConfirmInvite from './ConfirmInvite';
 
 class App extends PureComponent {
   constructor(props) {
@@ -14,6 +15,7 @@ class App extends PureComponent {
       current_user: {
         id: null,
         username: '',
+        accessLevel: null,
         isAuthenticated: false
       },
       photos: [],
@@ -28,10 +30,9 @@ class App extends PureComponent {
   }
 
   checkLoginStatus() {
+    console.log("CHECKING LOG IN STATUS");
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
-      console.log(response.data)
-      console.log(response.data.is_logged_in);
       if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
         this.handleSuccessfulAuth(response.data);
         this.retrievePhotos();
@@ -40,6 +41,7 @@ class App extends PureComponent {
           current_user: {
             id: null,
             username: '',
+            accessLevel: null,
             isAuthenticated: false
           }
         }));
@@ -51,8 +53,8 @@ class App extends PureComponent {
   retrievePhotos() {
     axios.get("http://localhost:8080/", { withCredentials: true })
     .then(data => {
-      console.log("INDEX PHOTO DATA: ", data);
       if (data.data) {
+        console.log("PHOTOS DATA: ", data.data);
         if (data.data.length > 0) {
           this.setState( () => ({
             photos: data.data,
@@ -69,10 +71,12 @@ class App extends PureComponent {
   }
 
   handleSuccessfulAuth(data) {
+    console.log("SUCCESSFUL AUTH DATA: ", data)
     this.setState(() => ({
       current_user: {
         id: data.user_id,
         username: data.username,
+        accessLevel: data.access_level,
         isAuthenticated: true
       }
     }));
@@ -83,19 +87,18 @@ class App extends PureComponent {
       current_user: {
         is: null,
         username: '',
+        accessLevel: null,
         isAuthenticated: false
       }
     }));
   }
   
   componentDidMount() {
+    console.log("COMPONENT DID MOUNT");
     this.checkLoginStatus();
   }
 
   render() { 
-    if (this.state.havePhotos) {
-      console.log("APP HAS ACCESS TO PHOTOS: ", this.state.photos);
-    }
     return (
         <BrowserRouter>
           <Switch>
@@ -134,6 +137,17 @@ class App extends PureComponent {
                   {...props} 
                   isAuthed={this.state.current_user.isAuthenticated} 
                   handleSuccessfulAuth={this.handleSuccessfulAuth} 
+                />
+              )}
+            />
+            <Route 
+              exact
+              path={"/register-invite"}
+              render={props => (
+                <ConfirmInvite 
+                  {...props}
+                  isAuthed={this.state.current_user.isAuthenticated}
+                  handleSuccessfulAuth={this.handleSuccessfulAuth}
                 />
               )}
             />

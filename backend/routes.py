@@ -1,16 +1,24 @@
-import glob
+# import glob
 import os
-import io
+# import io
 from pathlib import Path
-from datetime import date
+# from datetime import date
 import asyncio
+import datetime
+# from email.message import EmailMessage
 import json
+import random
 import sqlite3
+import string
+# from threading import Thread
 from typing import Awaitable, Callable
 from uuid import uuid4
 
 from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
+# from aiosmtplib import send
+# from aiosmtplib import SMTP
+# from aiosmtplib import SMTPTimeoutError
 from PIL import Image
 
 from db import DATABASE
@@ -37,18 +45,20 @@ def image_to_db(user_id, album_id, child_id, filename, web_filename, thumbnail_f
         conn.commit()
 
 
-def retrieve_images(current_user_id):
+def retrieve_images(current_user_id, other_ids):
+    """Retrieve images for specified IDs."""
     print(f"IN RETRIEVE IMAGES {type(current_user_id)}")
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute("""
         SELECT * from images
-        WHERE user_id = ?
-        """, (current_user_id,))
+        WHERE user_id=(?) OR user_id=(?)
+        """, (current_user_id, other_ids))
         return cur
 
 
 def parse_image_data(db_data):
+    """Parse the image data from the database and add to data object to return to clientside as json."""
     parsed_data = []
 
     for row in db_data:
@@ -58,6 +68,7 @@ def parse_image_data(db_data):
         thumb_size_loc = '../static/images/' + row[6] if type(row[6]) is not NoneType else full_size_loc
         parsed_data.append({
             'photo_id': row[0],
+            'user_id': row[1],
             'album_id': row[2],
             'child_id': row[3],
             'filename': row[4],
@@ -75,8 +86,33 @@ def parse_image_data(db_data):
 
 
 def order_images(parsed_image_array):
+    """Sort image array so most recent appears first."""
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
-    # print(f"Reordered array {parsed_image_array}")
+
+
+def generate_invite_code():
+    """Generate a 5-character invite code."""
+    valid_letters = string.ascii_uppercase
+    generated_code = ''.join(random.choice(valid_letters) for i in range(5))
+    return generated_code
+
+
+# async def send_invite_email(sender, invite_email, invite_code) -> None:
+#     message = EmailMessage()
+#     message["From"] = "tuchka@gmail.com"
+#     message["To"] = "julialoy@gmail.com"
+#     message["Subject"] = "Test JL Photo App Invite"
+#     message_str = "{} has invited you to join the test photo app. Use code {} to join".format(sender, invite_code)
+#     message.set_content(message_str)
+#     await send(
+#         message,
+#         hostname="smtp.gmail.com",
+#         port=587,
+#         start_tls=True,
+#         username="",
+#         password="",
+#         timeout=30
+#     )
 
 
 @web.middleware
@@ -106,8 +142,25 @@ async def index_handler(request: web.Request) -> web.json_response:
     print(f"USERNAME: {username}")
     print(f"SESSION: {session}")
     user_id = session.get("user_id")
+    additional_id = None
     print(f"USER ID: {user_id}")
-    available_photos = retrieve_images(user_id)
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            SELECT * FROM users
+            WHERE id=(?)
+            """, (user_id,))
+
+            for row in cur:
+                additional_id = row[5]
+
+    except sqlite3.DatabaseError as err:
+        print(f"ERROR RETRIEVING USER: {err}")
+
+    print(f"ADDITIONAL IDs: {additional_id}")
+    available_photos = retrieve_images(user_id, additional_id)
     parsed_photos = parse_image_data(available_photos)
     order_images(parsed_photos)
     return web.json_response(parsed_photos)
@@ -119,9 +172,11 @@ async def login_handler(request: web.Request) -> web.json_response:
     print("FIND USER AND LOG IN")
     session = await new_session(request)
     request_json = await json_handler(request)
+    print(f"TRY TO LOG IN DATA: {request_json}")
     username = request_json['user']['email']
     password = request_json['user']['password']
-    data = {'logged_in': False, 'user_id': None, 'username': None}
+    print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
+    data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
 
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
@@ -135,9 +190,7 @@ async def login_handler(request: web.Request) -> web.json_response:
                 data['logged_in'] = True
                 data['user_id'] = selected_user[0]
                 data['username'] = selected_user[1]
-                # Instead of username create temporary auth token for user upon login
-                # Store in database
-                # Put auth token in session
+                data['access_level'] = selected_user[3]
                 # Delete auth token after certain amount of time (or log out?)
                 # This will require user to log back in
                 auth_token = uuid4()
@@ -145,6 +198,7 @@ async def login_handler(request: web.Request) -> web.json_response:
                 session["username"] = username
                 session["user_id"] = selected_user[0]
                 session["auth_token"] = auth_token
+                session["access_level"] = selected_user[3]
                 session["logged_in"] = True
                 print(f"{session}")
                 cur.execute("""
@@ -201,13 +255,15 @@ async def registration_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/logged_in")
 async def logged_in_handler(request: web.Request) -> web.json_response:
-    data = {"username": None, "is_logged_in": False}
+    data = {"user_id": None, "username": None, "access_level": None, "is_logged_in": False}
     session = await get_session(request)
     print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
     if valid_auth_token:
         data["is_logged_in"] = True
         data["username"] = session["username"]
+        data["user_id"] = session["user_id"]
+        data["access_level"] = session["access_level"]
     return web.json_response(data)
 
 
@@ -234,6 +290,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
         session["user_id"] = None
         session["username"] = None
         session["auth_token"] = None
+        session["access_level"] = None
         session["logged_in"] = False
         data = {"log_out_successful": True}
     except sqlite3.DatabaseError as err:
@@ -283,6 +340,161 @@ async def edit_handler(request: web.Request) -> web.json_response():
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
+
+    return web.json_response(data)
+
+
+@router.post("/invite")
+@require_login
+async def invite_handler(request: web.Request) -> web.json_response():
+    data = {"invite_sent": False, "invite_code": None, "error": None}
+    session = await get_session(request)
+    current_user = session.get("user_id")
+    # current_user_username = session.get("username")
+    req_data = await json_handler(request)
+    print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
+    invite_email = req_data['invite']['email']
+    invite_access_level = req_data['invite']['accessLevel']
+    today = datetime.datetime.now(datetime.timezone.utc)
+    invite_expires = datetime.timedelta(weeks=2)
+    invite_expiry = today + invite_expires
+    invite_code = generate_invite_code()
+
+    if invite_access_level is None or len(invite_access_level) == 0:
+        data['error'] = "Invalid access level. Please try again."
+        return web.json_response(data)
+    elif invite_email is None or len(invite_email) == 0:
+        data['error'] = "Invalid email. Please try again."
+        return web.json_response(data)
+
+    # Write logic to not duplicate invites
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO invites (invited_by, invite_email, invite_code, invite_expires, access_level)
+            VALUES (?, ?, ?, ?, ?)
+            """, (current_user, invite_email, invite_code, invite_expiry, invite_access_level))
+            conn.commit()
+            data['invite_sent'] = True
+            data['invite_code'] = invite_code
+    except sqlite3.DatabaseError as err:
+        print(f"DATABASE ERROR: {err}")
+        data['error'] = "Unable to complete invite."
+
+    # Send invite email
+    # try:
+    #     await send_invite_email(current_user_username, invite_email, invite_code)
+    #     data['invite_sent'] = True
+    # except SMTPTimeoutError as err:
+    #     print(f"RUNTIME ERROR: {err}")
+    #     data['invite_sent'] = False
+    # else:
+    #     print(f"OMG something happened")
+
+    return web.json_response(data)
+
+
+@asyncio.coroutine
+@router.post("/register-invite")
+async def register_invite_handler(request: web.Request) -> web.json_response:
+    print(f"REGISTER THE INVITE")
+    data = {"invite_redeemed": False, "error": None, "username": None, "user_id": None, "user_access_level": None}
+    session = await new_session(request)
+    invite_confirm_data = await json_handler(request)
+    invitee_email = invite_confirm_data["inviteInfo"]["email"]
+    invitee_code = invite_confirm_data["inviteInfo"]["code"]
+    invitee_access_level = None
+    invited_by = None
+    invitee_key = None
+    print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            SELECT * FROM invites
+            WHERE invite_email=? and invite_code=?
+            """, (invitee_email, invitee_code))
+
+            for row in cur:
+                print(f"INVITES ROW: {row}")
+                tdy = str(datetime.datetime.now(datetime.timezone.utc))
+                if row[4] < tdy:
+                    data["invite_redeemed"] = False
+                    data["error"] = "Invite code has expired."
+                    return web.json_response(data)
+                else:
+                    data["invite_redeemed"] = True
+                    invitee_access_level = row[5]
+                    invited_by = row[1]
+                    invitee_key = row[0]
+    except sqlite3.DatabaseError as err:
+        data["invite_redeemed"] = False
+        data["error"] = "There was a database error."
+        print(f"REDEEM INVITE ERROR: {err}")
+
+    if data["invite_redeemed"]:
+        print(f"INVITE REDEEMED")
+        temp_password_uuid4 = uuid4()
+        temp_password = temp_password_uuid4.hex
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            INSERT INTO users (username, password, access_level, linked_to)
+            VALUES (?, ?, ?, ?)
+            """, (invitee_email, temp_password, invitee_access_level, invited_by))
+            auth_token = uuid4()
+            auth_token = auth_token.hex
+            session["username"] = invitee_email
+            session["user_id"] = cur.lastrowid
+            session["auth_token"] = auth_token
+            session["access_level"] = invitee_access_level
+            session["logged_in"] = True
+            data["username"] = invitee_email
+            data["user_id"] = cur.lastrowid
+            data["user_access_level"] = invitee_access_level
+            print(f"{session}")
+            cur.execute("""
+            UPDATE users
+            SET auth_token = (?)
+            WHERE username = (?)
+            """, (auth_token, invitee_email))
+            conn.commit()
+            cur.execute("""
+            DELETE FROM invites
+            WHERE id=?
+            """, (invitee_key,))
+            conn.commit()
+
+    print(f"INVITE DATA: {data}")
+    return web.json_response(data)
+
+
+@asyncio.coroutine
+@router.post("/reset-password")
+@require_login
+async def reset_password_handler(request: web.Request) -> web.json_response:
+    data = {"password_reset_successful": False, "error": None}
+    session = await get_session(request)
+    password_data = await json_handler(request)
+    new_password = password_data["user"]["password"]
+    current_user_id = session.get("user_id")
+
+    try:
+        with sqlite3.connect(db) as conn:
+            cur = conn.cursor()
+            cur.execute("""
+            UPDATE users
+            SET password=(?)
+            WHERE id=(?)
+            """, (new_password, current_user_id))
+            conn.commit()
+            data["password_reset_successful"] = True
+    except sqlite3.DatabaseError as err:
+        print(f"RESET PASSWORD ERROR: {err}")
+        data["error"] = "A database error occurred. Unable to reset password."
+
     return web.json_response(data)
 
 
@@ -292,7 +504,7 @@ async def edit_handler(request: web.Request) -> web.json_response():
 async def upload_handler(request: web.Request) -> web.json_response:
     data = {"upload_successful": False, "warnings": [], "error": None}
     session = await get_session(request)
-    current_user = session['user_id']
+    current_user = session.get("user_id")
     image_data = await request.post()
     counter = 0
     end_count = len(image_data)
@@ -355,7 +567,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         f.write(video_contents)
 
                     # No exif for video files
-                    vid_creation_date = date.today()
+                    vid_creation_date = datetime.datetime.today()
 
                     # Resize for web and save
                     # orig_vid_size = image_file.size
@@ -396,7 +608,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     creation_exif_date = exif_data.get(36867)
 
                     if creation_exif_date is None:
-                        creation_date = date.today()
+                        creation_date = datetime.datetime.today()
                     else:
                         date_portion = creation_exif_date.split(' ')[0]
                         time_portion = creation_exif_date.split(' ')[1]

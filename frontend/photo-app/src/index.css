@@ -140,6 +140,7 @@ video.image-element-class {
 }
 
 /** LOGIN AND REGISTRATION **/
+#confirmInviteBody,
 #loginBody,
 #registerBody {
   height: 100%;
@@ -157,6 +158,7 @@ video.image-element-class {
   background-color: #f5f5f5;
 }
 
+#confirmInviteForm,
 #loginForm,
 #registerForm {
   width: 100%;
@@ -165,10 +167,15 @@ video.image-element-class {
   margin: 0 auto;
 }
 
+#confirmInviteSumbit {
+  margin-top: 1em;
+}
+
 #loginForm .checkbox {
   font-weight: 400;
 }
 
+#confirmInviteForm .form-control,
 #loginForm .form-control,
 #registerForm .form-control {
   position: relative;
@@ -178,11 +185,13 @@ video.image-element-class {
   font-size: 16px;
 }
 
+#confirmInviteForm .form-control:focus,
 #loginForm .form-control:focus,
 #registerForm .form-control:focus {
   z-index: 2;
 }
 
+#confirmInviteForm input[type="email"],
 #loginForm input[type="email"],
 #registerForm input[type="email"] {
   margin-bottom: -1px;
@@ -190,6 +199,7 @@ video.image-element-class {
   border-bottom-left-radius: 0;
 }
 
+#confirmInviteForm input[input="password"],
 #loginForm input[input="password"],
 #registerForm input[input="password"] {
   margin-bottom: 10px;

@@ -10,9 +10,6 @@ class PhotoModal extends PureComponent {
     this.state = {
       editToggled: false,
       displayDate: this.props.photoDate,
-/*       month: "",
-      day: "",
-      year: "", */
       date: this.props.photoDate,
       error: ""
     };
@@ -41,26 +38,6 @@ class PhotoModal extends PureComponent {
   saveNewDate(evt) {
     evt.preventDefault();
     let validSave = true
-/*     let saveYear = this.state.year;
-    let saveMonth = this.state.month;
-    let saveDay = this.state.day;
-
-    if (this.state.month === "") {
-      saveMonth = (moment(this.props.photoDate).month() + 1).toString();
-    }
-    if (this.state.day === "") {
-      saveDay = (moment(this.props.photoDate).date()).toString();
-    }
-    if (this.state.year === "") {
-      saveYear = (moment(this.props.photoDate).year()).toString();
-    }
-    if (saveMonth.length === 1) {
-      saveMonth = "0".concat(saveMonth);
-    }
-    if (saveDay.length === 1) {
-      saveDay = "0".concat(saveDay);
-    }
-    const newPhotoDate = saveYear.concat('-', saveMonth, '-', saveDay); */
     const newPhotoDate = this.state.date;
 
     if (!moment(newPhotoDate).isValid()) {
@@ -95,18 +72,12 @@ class PhotoModal extends PureComponent {
       
       this.setState({
         editToggled: false,
-/*         month: "",
-        day: "",
-        year: "" */
         displayDate: newPhotoDate,
         date: newPhotoDate
       });
     } else {
       this.setState({
         editToggled: false,
-/*         month: "",
-        day: "",
-        year: "", */
         displayDate: this.props.photoDate,
         date: this.props.photoDate,
         error: "Invalid date entered"
@@ -115,7 +86,6 @@ class PhotoModal extends PureComponent {
   }
   
   handleKeyDown(e) {
-    console.log("KEY DOWN: ", e.keyCode);
     if (e.keyCode === 27) {
       this.handleModalClose();
     }
@@ -134,9 +104,6 @@ class PhotoModal extends PureComponent {
     this.setState({
       editToggled: false,
       displayDate: "",
-/*       month: "",
-      day: "",
-      year: "", */
       date: "",
       error: ""
     });
@@ -145,7 +112,6 @@ class PhotoModal extends PureComponent {
 
   handleChange(e) {
     const formValues = e.target.value;
-    console.log("FORM VALUES: ", formValues);
     this.setState({
       [e.target.name]: formValues
     });
@@ -154,9 +120,6 @@ class PhotoModal extends PureComponent {
   handleCancel() {
     this.setState({
       editToggled: false,
-/*       month: "",
-      day: "",
-      year: "" */
       displayDate: this.props.photoDate,
       date: this.props.photoDate
     });
@@ -169,39 +132,16 @@ class PhotoModal extends PureComponent {
   }
 
   render() {
-    console.log("PHOTODATE FROM PROPS: ", this.props.photoDate);
-    console.log("PHOTO MODAL STATE: ", this.state);
     const {show, photoName, fullPhoto, photoDate} = this.props;
-
     const mediaType = photoName.split('.')[1];
     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
-
-/*     const photoFullDate = moment(this.props.photoDate);
-    const displayDate = moment(photoFullDate._d).format("dddd, MMM Do YYYY"); */
-
     const photoDateDiv = <div className="photo-date">
       {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
-      <button className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
+      <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
     </div>
 
     const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
- {/*      <div className="col">
-        <label htmlFor="month">Month</label>
-        <select defaultValue={moment(photoDate).month()+1} onChange={this.handleChange} className="form-control form-control-sm" name="month" id="month">
-          {monthSelectArray}
-        </select>
-      </div>
-      <div className="col">
-        <label htmlFor="day">Day</label>
-        <select defaultValue={moment(photoDate).date()} onChange={this.handleChange} className="form-control form-control-sm" name="day" id="day">
-          {daySelectArray}
-        </select>
-      </div>
-      <div className="col">
-        <label htmlFor="year">Year</label>
-        <input className="form-control form-control-sm" type="text" name="year" id="year" onChange={this.handleChange} placeholder={moment(photoDate).format("YYYY")} />
-      </div> */}
       <div className="col">
         <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
       </div>
@@ -245,7 +185,6 @@ class PhotoModal extends PureComponent {
               </button>
               </div>
               <div className="modal-body text-center">
-                {/* <img className="full-size-photo img-fluid" src={fullPhoto} alt="" /> */}
                 {mediaType === "mp4" ? videoElement : imgElement}
               </div>
               <div className="modal-footer">

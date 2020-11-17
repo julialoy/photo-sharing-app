@@ -42,7 +42,6 @@ class Register extends Component {
       )
       .then(response => {
         if (response.data.is_registered) {
-          // this.props.handleSuccessfulAuth(data)
           this.props.handleSuccessfulAuth(response.data);
           this.handleIndexRedirect();
           console.log(response.data);  

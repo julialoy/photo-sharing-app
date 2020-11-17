@@ -2,10 +2,10 @@ import React, { PureComponent } from "react";
 import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
-import moment from 'moment';
 import Upload from "./Upload";
 import Year from "./Year";
 import PhotoModal from './PhotoModal';
+import Settings from './UserSettings';
 
 class Home extends PureComponent {
   constructor(props) {
@@ -17,18 +17,21 @@ class Home extends PureComponent {
       photoId: "",
       photoFilename: "",
       fullSizeLoc: "",
-      fullSizeDate: ""
+      fullSizeDate: "",
+      showSettingsModal: false
     };
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
-    this.handleUploadRedirect = this.handleUploadRedirect.bind(this);
+/*     this.handleUploadRedirect = this.handleUploadRedirect.bind(this); */
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
     this.showPhotoModal = this.showPhotoModal.bind(this);
     this.handlePhotoModalClose = this.handlePhotoModalClose.bind(this);
     this.handleCompletePhotoUpload = this.handleCompletePhotoUpload.bind(this);
     this.showUploadModal = this.showUploadModal.bind(this);
     this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
+    this.showSettingsModal = this.showSettingsModal.bind(this);
+    this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
   }
 
   static propTypes = {
@@ -45,9 +48,9 @@ class Home extends PureComponent {
     this.props.history.push("/login");
   }
 
-  handleUploadRedirect() {
+/*   handleUploadRedirect() {
     this.props.history.push("/upload");
-  }
+  } */
   
   handleLogout(evt) {
     evt.preventDefault();
@@ -61,7 +64,6 @@ class Home extends PureComponent {
       )
       .then(response => {
         if (response.data.log_out_successful) {
-          console.log("Log out successful ", response.data);
           this.props.handleSuccessfulLogOut(response.data);
           this.handleLoginRedirect();
         }
@@ -79,6 +81,20 @@ class Home extends PureComponent {
     } else {
       console.log("Photo did not upload properly");
     }
+  }
+
+  showSettingsModal() {
+    this.setState({
+      showSettingsModal: true
+    });
+    document.body.classList.add('modal-open');
+  }
+
+  handleSettingsModalClose() {
+    this.setState({
+      showSettingsModal: false
+    });
+    document.body.classList.remove('modal-open');
   }
 
   showUploadModal() {
@@ -109,7 +125,6 @@ class Home extends PureComponent {
     });
     // Add 'modal-open'class on open so scroll bar will be removed and scrolling locked on body
     document.body.classList.add('modal-open');
-    console.log("showPhotoModal toggled: ", photoData.full_size_loc);
   }
 
   handlePhotoModalClose() {
@@ -137,10 +152,10 @@ class Home extends PureComponent {
       havePhotos
     } = this.props;
 
-    console.log("LOGGED IN?", isAuthed);
+/*     console.log("LOGGED IN?", isAuthed);
     console.log("PHOTOS: ", photos);
     console.log("HAVE PHOTOS? ", havePhotos);
-    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal);
+    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal); */
 
     if (!isAuthed) {
       this.handleLoginRedirect();
@@ -191,18 +206,19 @@ class Home extends PureComponent {
                         Upload
                       </Link>
                     </li>
-                    <li className="nav-item">
+{/*                     <li className="nav-item">
                       <Link 
                         to="/activity" 
                         className="nav-link"
                       >
                         Activity
                       </Link>
-                    </li>
+                    </li> */}
                     <li className="nav-item">
                       <Link 
-                        to="/settings" 
+                        to="/" 
                         className="nav-link"
+                        onClick={this.showSettingsModal}
                       >
                         Settings
                       </Link>
@@ -228,6 +244,12 @@ class Home extends PureComponent {
           completePhotoUpload={this.handleCompletePhotoUpload}
           currentUser={currentUser}
           onClose={this.handleUploadModalClose}
+        />
+        <Settings 
+          isAuthed={isAuthed}
+          show={this.state.showSettingsModal}
+          currentUser={currentUser}
+          onClose={this.handleSettingsModalClose}
         />
         <PhotoModal 
           show={this.state.showPhotoModal}

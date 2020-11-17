@@ -9,16 +9,15 @@ import jinja2
 from aiohttp import web
 import aiohttp_cors
 
-from db import create_images_db, create_users_db, get_db_path, init_db
-# from routes import check_login, error_middleware, username_ctx_processor, router
-from routes import edit_handler, index_handler, logged_in_handler, login_handler, logout_handler, registration_handler, router, upload_handler
+from db import create_images_db, create_invites_db, create_users_db, get_db_path, init_db
+from routes import (edit_handler, index_handler, invite_handler, logged_in_handler, login_handler, logout_handler,
+                    register_invite_handler, registration_handler, reset_password_handler, router, upload_handler)
 
-fernet_key = b'7TRw6P1h4U9hUo6m9jja9YZ0Qg4RtVl2TD2u7CDOqt0='
+# fernet_key will contain a valid token
+fernet_key = None
 SECRET_KEY = base64.urlsafe_b64decode(fernet_key)
 BASE_PATH = Path(__file__).parent
-
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-# app = web.Application()
 
 
 async def init_app(db_path: Path) -> web.Application:
@@ -28,7 +27,6 @@ async def init_app(db_path: Path) -> web.Application:
     aiohttp_jinja2.setup(
         app,
         loader=jinja2.FileSystemLoader(str(BASE_PATH / "templates")),
-        # context_processors=[username_ctx_processor],
     )
     app.router.add_route("GET", "/", index_handler)
     app.router.add_route("POST", "/login", login_handler)
@@ -37,13 +35,12 @@ async def init_app(db_path: Path) -> web.Application:
     app.router.add_route("POST", "/logout", logout_handler)
     app.router.add_route("POST", "/upload", upload_handler)
     app.router.add_route("POST", "/edit", edit_handler)
+    app.router.add_route("POST", "/invite", invite_handler)
+    app.router.add_route("POST", "/register-invite", register_invite_handler)
+    app.router.add_route("POST", "/reset-password", reset_password_handler)
     app.router.add_static("/static", path=str(BASE_PATH / "static"), name="static")
     app.router.add_static("/images", path=str(BASE_PATH / "static/images"), name="images")
     app.cleanup_ctx.append(init_db)
-    # app.cleanup_ctx.append(persistent_session)
-    # app.middlewares.append(error_middleware)
-    # app.middlewares.append(check_login)
-    # app.middlewares.append(username_ctx_processor)
     cors = aiohttp_cors.setup(app, defaults={
         "http://localhost:3000": aiohttp_cors.ResourceOptions(
             allow_credentials=True,
@@ -66,4 +63,5 @@ async def init_app(db_path: Path) -> web.Application:
 if __name__ == '__main__':
     create_users_db()
     create_images_db()
+    create_invites_db()
     web.run_app(init_app(get_db_path()))
