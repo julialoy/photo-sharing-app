@@ -54,6 +54,7 @@ class App extends PureComponent {
     axios.get("http://localhost:8080/", { withCredentials: true })
     .then(data => {
       if (data.data) {
+        console.log("PHOTOS DATA: ", data.data);
         if (data.data.length > 0) {
           this.setState( () => ({
             photos: data.data,

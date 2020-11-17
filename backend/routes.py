@@ -46,6 +46,7 @@ def image_to_db(user_id, album_id, child_id, filename, web_filename, thumbnail_f
 
 
 def retrieve_images(current_user_id, other_ids):
+    """Retrieve images for specified IDs."""
     print(f"IN RETRIEVE IMAGES {type(current_user_id)}")
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
@@ -57,6 +58,7 @@ def retrieve_images(current_user_id, other_ids):
 
 
 def parse_image_data(db_data):
+    """Parse the image data from the database and add to data object to return to clientside as json."""
     parsed_data = []
 
     for row in db_data:
@@ -66,6 +68,7 @@ def parse_image_data(db_data):
         thumb_size_loc = '../static/images/' + row[6] if type(row[6]) is not NoneType else full_size_loc
         parsed_data.append({
             'photo_id': row[0],
+            'user_id': row[1],
             'album_id': row[2],
             'child_id': row[3],
             'filename': row[4],
@@ -83,10 +86,12 @@ def parse_image_data(db_data):
 
 
 def order_images(parsed_image_array):
+    """Sort image array so most recent appears first."""
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
 
 
 def generate_invite_code():
+    """Generate a 5-character invite code."""
     valid_letters = string.ascii_uppercase
     generated_code = ''.join(random.choice(valid_letters) for i in range(5))
     return generated_code
@@ -428,11 +433,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
         data["invite_redeemed"] = False
         data["error"] = "There was a database error."
         print(f"REDEEM INVITE ERROR: {err}")
-    # else:
-    #     print(f"INVITE NOT FOUND")
-    #     data["invite_redeemed"] = False
-    #     data["error"] = "Invite not found."
-    #     return web.json_response(data)
 
     if data["invite_redeemed"]:
         print(f"INVITE REDEEMED")

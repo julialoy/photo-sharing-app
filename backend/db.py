@@ -40,6 +40,17 @@ async def init_db(app: web.Application) -> AsyncIterator[None]:
     await db.close()
 
 
+def delete_auth_tokens(cursor) -> None:
+    print(f"REMOVING OLD AUTH TOKENS")
+    try:
+        cursor.execute("""
+        UPDATE users
+        SET auth_token=(?)
+        """, (None,))
+    except sqlite3.DatabaseError as err:
+        print(f"ERROR REMOVING AUTH TOKENS: {err}")
+
+
 def clean_invite_db(cursor) -> None:
     today = str(datetime.datetime.now(datetime.timezone.utc))
     print(f"CLEANING INVITE DATABASE FOR EXPIRY: {today} (type: {type(today)}")
@@ -64,7 +75,10 @@ def create_users_db() -> None:
                 SELECT * from users
                 WHERE id = 1
                 """)
-            print("TABLE USERS EXISTS")
+                print("TABLE USERS EXISTS")
+                delete_auth_tokens(cur)
+                print("DELETING OLD AUTH TOKENS")
+                conn.commit()
             return
         except sqlite3.DatabaseError as err:
             print(f"DatabaseError: {err}")
@@ -97,7 +111,7 @@ def create_images_db() -> None:
                 cur.execute("""
                 SELECT * from images
                 """)
-            print("TABLE IMAGES EXISTS")
+                print("TABLE IMAGES EXISTS")
             return
         except sqlite3.DatabaseError as err:
             print(f"DatabaseError: {err}")
