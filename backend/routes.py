@@ -8,7 +8,7 @@ import datetime
 # from email.message import EmailMessage
 import json
 import random
-import sqlite3
+# import sqlite3
 import string
 # from threading import Thread
 from typing import Awaitable, Callable
@@ -21,9 +21,10 @@ from aiohttp import web
 # from aiosmtplib import SMTPTimeoutError
 from PIL import Image
 
-from db import DATABASE
 
-db = DATABASE
+# from db import DATABASE
+
+# db = DATABASE
 BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
@@ -47,40 +48,68 @@ def image_to_db(user_id, album_id, child_id, filename, web_filename, thumbnail_f
 
 def retrieve_images(current_user_id, other_ids):
     """Retrieve images for specified IDs."""
-    print(f"IN RETRIEVE IMAGES {type(current_user_id)}")
+    print(f"IN RETRIEVE IMAGES {type(other_ids)}")
+    id_list = None
+    photo_data = []
+
+    if type(other_ids) is str:
+        id_list = other_ids.split(',')
+
+    if id_list is not None:
+        use_ids = id_list
+    else:
+        use_ids = other_ids
+
     with sqlite3.connect(db) as conn:
         cur = conn.cursor()
         cur.execute("""
-        SELECT * from images
-        WHERE user_id=(?) OR user_id=(?)
-        """, (current_user_id, other_ids))
-        return cur
+        SELECT * FROM images
+        WHERE user_id=(?)
+        """, (current_user_id,))
+
+        for row in cur:
+            photo_data.append(parse_image_data(row)[0])
 
 
-def parse_image_data(db_data):
+    for single_id in use_ids:
+        with sqlite3.connect(db) as conn:
+            new_cur = conn.cursor()
+            new_cur.execute("""
+            SELECT * FROM images
+            WHERE user_id=(?)
+            """, (single_id,))
+
+            for additional_row in new_cur:
+                photo_data.append(parse_image_data(additional_row)[0])
+
+    print(f"PHOTO DATA: {photo_data}")
+    return photo_data
+
+
+def parse_image_data(db_row):
     """Parse the image data from the database and add to data object to return to clientside as json."""
     parsed_data = []
 
-    for row in db_data:
-        NoneType = type(None)
-        full_size_loc = '../static/images/' + row[4] if len(row[4]) >= 1 else ''
-        web_size_loc = '../static/images/' + row[5] if type(row[5]) is not NoneType else full_size_loc
-        thumb_size_loc = '../static/images/' + row[6] if type(row[6]) is not NoneType else full_size_loc
-        parsed_data.append({
-            'photo_id': row[0],
-            'user_id': row[1],
-            'album_id': row[2],
-            'child_id': row[3],
-            'filename': row[4],
-            'web_size_filename': row[5],
-            'thumbnail_filename': row[6],
-            'full_size_loc': full_size_loc,
-            'web_size_loc': web_size_loc,
-            'thumb_size_loc': thumb_size_loc,
-            'date_taken': row[8],
-            'title': row[9],
-            'description': row[10],
-        })
+    # for row in db_data:
+    NoneType = type(None)
+    full_size_loc = '../static/images/' + db_row[4] if len(db_row[4]) >= 1 else ''
+    web_size_loc = '../static/images/' + db_row[5] if type(db_row[5]) is not NoneType else full_size_loc
+    thumb_size_loc = '../static/images/' + db_row[6] if type(db_row[6]) is not NoneType else full_size_loc
+    parsed_data.append({
+        'photo_id': db_row[0],
+        'user_id': db_row[1],
+        'album_id': db_row[2],
+        'child_id': db_row[3],
+        'filename': db_row[4],
+        'web_size_filename': db_row[5],
+        'thumbnail_filename': db_row[6],
+        'full_size_loc': full_size_loc,
+        'web_size_loc': web_size_loc,
+        'thumb_size_loc': thumb_size_loc,
+        'date_taken': db_row[8],
+        'title': db_row[9],
+        'description': db_row[10],
+    })
 
     return parsed_data
 
@@ -161,9 +190,9 @@ async def index_handler(request: web.Request) -> web.json_response:
 
     print(f"ADDITIONAL IDs: {additional_id}")
     available_photos = retrieve_images(user_id, additional_id)
-    parsed_photos = parse_image_data(available_photos)
-    order_images(parsed_photos)
-    return web.json_response(parsed_photos)
+    # parsed_photos = parse_image_data(available_photos)
+    order_images(available_photos)
+    return web.json_response(available_photos)
 
 
 @asyncio.coroutine

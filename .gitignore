@@ -1,5 +1,10 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# config
+/backend
+*.yaml
+*.txt
+
 # dependencies
 /frontend/photo-app/node_modules
 /.pnp
@@ -26,6 +31,7 @@ yarn-error.log*
 
 # databases
 .sqlite3
+.ini
 
 *.swp
 *.bak
