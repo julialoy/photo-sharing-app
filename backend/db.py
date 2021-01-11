@@ -3,6 +3,7 @@
 # from dataclasses import dataclass
 # from pathlib import Path
 # from typing import AsyncIterator, List
+from contextlib import contextmanager
 
 # import aiosqlite
 # import asyncio
@@ -12,10 +13,21 @@ import datetime
 
 import aiopg.sa
 # import psycopg2
-from sqlalchemy import exc, DateTime, MetaData, Table, Column, ForeignKey, Integer, String
+# from sqlalchemy.orm import sessionmaker
+from sqlalchemy import exc, DateTime, MetaData, Table, Column, ForeignKey, Integer, String, create_engine
 
+from settings import config
 
 # DATABASE = 'photo_user.sqlite3'
+
+# users access levels:
+# primary -> can upload, download, delete, edit date and tags, enter title and description, invite friends/family, edit
+# collaborator's permissions to restrict activity
+# collaborator -> can upload, delete, download, edit date and tags, enter title and description, invite friends/family
+# viewer -> can view photos, download
+# restricted -> can view certain photos, cannot download
+DSN = "postgresql://{user}:{password}@{host}:{port}/{database}"
+
 __all__ = ['users', 'people', 'albums',
            'images', 'invites',
            'user_to_user_relationships',
@@ -105,36 +117,81 @@ def create_tables(engine):
                                                people_to_user_relationships, people_to_album_relationships])
 
 
+# @contextmanager
+# def db_session_scope(engine):
+#     Session = sessionmaker(bind=engine)
+#     sess = Session()
+#     try:
+#         yield sess
+#         sess.commit()
+#     except exc.DatabaseError:
+#         sess.rollback()
+#         raise
+#     finally:
+#         sess.close()
+
+
 async def init_pg(app: web.Application) -> None:
     print(f"INIT_PG")
-    conf = app['config']['postgres']
-    engine = await aiopg.sa.create_engine(
-        database=conf['database'],
-        user=conf['user'],
-        password=conf['password'],
-        host=conf['host'],
-        port=conf['port'],
-        minsize=conf['minsize'],
-        maxsize=conf['maxsize'],
-    )
+    db_url = DSN.format(**config['postgres'])
+    # engine = await aiopg.sa.create_engine(
+    #     database=conf['database'],
+    #     user=conf['user'],
+    #     password=conf['password'],
+    #     host=conf['host'],
+    #     port=conf['port'],
+    #     minsize=conf['minsize'],
+    #     maxsize=conf['maxsize'],
+    # )
+    engine = create_engine(db_url)
+    print(f"IN INIT_PG, ENGINE: {engine}")
+    # create_tables(engine)
+    clean_invite_db(engine)
+    delete_all_auth_tokens(engine)
+    # Session = sessionmaker(bind=engine)
+    # db_session = Session()
     app['db'] = engine
+    # app['db_session'] = db_session
 
 
 async def close_pg(app: web.Application) -> None:
     print(f"CLOSE_PG")
     app['db'].close()
     await app['db'].wait_closed()
+    del app['db']
 
 
 def clean_invite_db(engine) -> None:
     today = str(datetime.datetime.now(datetime.timezone.utc))
     print(f"Removing invites if expiry code < {today}")
+    engine.dispose()
     try:
-        conn = engine.connect()
-        conn.execute(invites.delete().where(invites.c.invite_expires < today))
-        conn.close()
+        with engine.connect() as conn:
+            conn.execute(invites.delete().where(invites.c.invite_expires < today))
     except exc.SQLAlchemyError as err:
         print(f"ERROR: {err}")
+
+
+def delete_all_auth_tokens(engine) -> None:
+    print(f"DELETING ALL AUTH TOKENS")
+    engine.dispose()
+    try:
+        with engine.connect() as conn:
+            conn.execute(users.update()
+                         .where(users.c.auth_token is not None)
+                         .values(auth_token=None))
+    except exc.SQLAlchemyError as err:
+        print(f"ERROR DELETING ALL AUTH TOKENS: {err}")
+
+        # def delete_auth_tokens(cursor) -> None:
+        #     print(f"REMOVING OLD AUTH TOKENS")
+        #     try:
+        #         cursor.execute("""
+        #         UPDATE users
+        #         SET auth_token=(?)
+        #         """, (None,))
+        #     except sqlite3.DatabaseError as err:
+        #         print(f"ERROR REMOVING AUTH TOKENS: {err}")
 
     # def clean_invite_db(cursor) -> None:
     #     today = str(datetime.datetime.now(datetime.timezone.utc))
@@ -147,13 +204,6 @@ def clean_invite_db(engine) -> None:
     #     except sqlite3.DatabaseError as err:
     #         print(f"ERROR CLEANING INVITES: {err}")
 
-
-# users access levels:
-# primary -> can upload, download, delete, edit date and tags, enter title and description, invite friends/family, edit
-# collaborator's permissions to restrict activity
-# collaborator -> can upload, delete, download, edit date and tags, enter title and description, invite friends/family
-# viewer -> can view photos, download
-# restricted -> can view certain photos, cannot download
 
 
 # @dataclass

@@ -8,9 +8,8 @@ import aiohttp_jinja2
 import aiohttp_session
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 import jinja2
-from sqlalchemy import create_engine
 
-from db import create_tables, close_pg, init_pg, clean_invite_db
+from db import create_tables, close_pg, init_pg, clean_invite_db, delete_all_auth_tokens
 from routes import (edit_handler, index_handler, invite_handler, logged_in_handler, login_handler, logout_handler,
                     register_invite_handler, registration_handler, reset_password_handler, router, upload_handler)
 from settings import config, key
@@ -20,7 +19,6 @@ fernet_key = str.encode(key)
 SECRET_KEY = base64.urlsafe_b64decode(fernet_key)
 BASE_PATH = Path(__file__).parent
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-DSN = "postgresql://{user}:{password}@{host}:{port}/{database}"
 
 
 async def init_app() -> web.Application:
@@ -73,9 +71,13 @@ if __name__ == '__main__':
 #     # create_images_db()
 #     # create_invites_db()
 #     # web.run_app(init_app(get_db_path()))
-    db_url = DSN.format(**config["postgres"])
-    engine = create_engine(db_url)
-    print(f"ENGINE IS TYPE {type(engine)}")
-    create_tables(engine)
-    clean_invite_db(engine)
+    # db_url = DSN.format(**config["postgres"])
+    # engine = create_engine(db_url)
+    # print(f"ENGINE IS TYPE {type(engine)}")
+    # print(f"ENGINE: {engine}")
+    # Session = sessionmaker()
+    # Session.configure(bind=engine)
+    # create_tables(engine)
+    # clean_invite_db(engine)
+    # delete_all_auth_tokens(engine)
     web.run_app(init_app())
