@@ -16,6 +16,7 @@ class Register extends Component {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleIndexRedirect = this.handleIndexRedirect.bind(this);
+    this.handleCloseErrorMsg = this.handleCloseErrorMsg.bind(this);
   }
 
   handleIndexRedirect() {
@@ -29,7 +30,6 @@ class Register extends Component {
       password,
       passwordConfirmation
     } = this.state; 
-
     if (password === passwordConfirmation) {
       axios.post("http://localhost:8080/register",
         {
@@ -46,9 +46,12 @@ class Register extends Component {
           this.handleIndexRedirect();
           console.log(response.data);  
         } else if (response.data.error) {
-          console.log(response.data.error)
+          console.log("else if", response.data.error)
+          this.setState({
+            registrationErrors: response.data.error
+          });
         } else {
-          console.log(response.data)
+          console.log("else", response.data)
         }
       })
       .catch(err => console.log(err));
@@ -68,12 +71,26 @@ class Register extends Component {
       [e.target.name]: e.target.value
     });
   }
+
+  handleCloseErrorMsg() {
+    this.setState({
+      registrationErrors: ""
+    });
+  }
   
   render() {
+    const errorDiv = <div className="alert alert-danger alert-dismissible fade show" role="alert">
+        {this.state.registrationErrors}
+        <button type="button" className="close" data-dissmiss="alert" aria-label="Close" onClick={this.handleCloseErrorMsg}>
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
     return (
       <div id="registerBody" className="text-center">
         <form id="registerForm" className="form-register" onSubmit={this.handleSubmit}>
           <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="72" height="72" />
+          {this.state.registrationErrors ? errorDiv : null}
           <label htmlFor="inputEmail" className="sr-only">Email address</label>
           <input 
             id="inputEmail"

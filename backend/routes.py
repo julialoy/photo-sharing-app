@@ -22,7 +22,8 @@ from aiohttp import web
 from PIL import Image
 
 import aiopg.sa
-from sqlalchemy import and_, exc, DateTime, MetaData, Table, Column, ForeignKey, Integer, String, update
+import psycopg2
+from sqlalchemy import and_, exc, DateTime, insert, MetaData, Table, Column, ForeignKey, Integer, String, update
 
 from db import (users, images, invites, albums, people,
                 people_to_user_relationships, people_to_album_relationships,
@@ -51,10 +52,10 @@ async def image_to_db(app: web.Application, user_id: Integer, album_id: Integer,
         formatted_date = datetime.datetime.strptime(image_date, '%Y-%m-%d')
         with db.connect() as conn:
             await conn.execute(images.insert().values(user_id=user_id, album_key=album_id,
-                                                        person_key=child_id, filename=filename,
-                                                        web_size_filename=web_filename,
-                                                        thumbnail_filename=thumbnail_filename,
-                                                        date_taken=formatted_date))
+                                                      person_key=child_id, filename=filename,
+                                                      web_size_filename=web_filename,
+                                                      thumbnail_filename=thumbnail_filename,
+                                                      date_taken=formatted_date))
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGE TO DB: {err}")
 
@@ -75,21 +76,31 @@ async def retrieve_images(app: web.Application, current_user_id: Integer):
     id_list = []
 
     with db.connect() as c:
-        selected_users = c.execute(users.select().where(users.c.id == current_user_id))
-        for user in selected_users:
+        selected_user = c.execute(users.select().where(users.c.id == current_user_id))
+        for user in selected_user:
             id_list.append(user[0])
-
+        related_users = c.execute(user_to_user_relationships.select()
+                                  .where(user_to_user_relationships.c.user_id == current_user_id))
+        for r_user in related_users:
+            id_list.append(r_user[1])
     print(f"ID LIST: {id_list}")
 
     try:
         with db.connect() as conn:
-            results = conn.execute(images.select().where(images.c.id == current_user_id))
-            for result in results:
-                photo_data.append(parse_image_data(result)[0])
+            # results = conn.execute(images.select().where(images.c.user_id == current_user_id))
+            # # result_rows = results.fetchall()
+            # for result in results:
+            #     print(f"RESULT: {result}")
+            #     photo_data.append(parse_image_data(result)[0])
             for single_id in id_list:
-                additional_results = conn.execute(images.select().where(images.c.id == single_id))
-                for res in additional_results:
-                    photo_data.append(parse_image_data(res)[0])
+                results = conn.execute(images.select().where(images.c.user_id == single_id))
+                # additional_result_rows = additional_results.fetchall()
+                for res in results:
+                    print(f"RESULT: {res}")
+                    p = parse_image_data(res)[0]
+                    photo_data.append(p)
+                    # if p['photo_id'] not in photo_data:
+                    #     photo_data.append(p)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
 
@@ -121,8 +132,6 @@ async def retrieve_images(app: web.Application, current_user_id: Integer):
 def parse_image_data(db_row):
     """Parse the image data from the database and add to data object to return to clientside as json."""
     parsed_data = []
-
-    # for row in db_data:
     NoneType = type(None)
     full_size_loc = '../static/images/' + db_row[4] if len(db_row[4]) >= 1 else ''
     web_size_loc = '../static/images/' + db_row[5] if type(db_row[5]) is not NoneType else full_size_loc
@@ -142,7 +151,6 @@ def parse_image_data(db_row):
         'title': db_row[9],
         'description': db_row[10],
     })
-
     return parsed_data
 
 
@@ -243,12 +251,12 @@ async def login_handler(request: web.Request) -> web.json_response:
     print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
     db = request.app['db']
-    print(f"ENGINE IS: {db}")
     db.dispose()
     # db_session = request.app['db_session']
     # print(db_session)
     # selected_user = db_session.query(users).filter_by(username=username, password=password).first()
     selected_user = None
+
     with db.connect() as conn:
         query_stmt = users.select().where(and_(users.c.username == username, users.c.password == password))
         selected_user_result = conn.execute(query_stmt)
@@ -350,6 +358,27 @@ async def registration_handler(request: web.Request) -> web.json_response:
     user_password = request_json['user']['password']
     user_access_level = 'primary'
     data = {'is_registered': True, 'username': '', 'user_id': '', 'error': None}
+    db = request.app['db']
+    db.dispose()
+
+    with db.connect() as conn:
+        try:
+            insert_stmt = insert(users).values(username=user_email,
+                                               password=user_password,
+                                               access_level=user_access_level)
+            conn.execute(insert_stmt)
+        except exc.IntegrityError as err:
+            print(f"REGISTRATION ERROR: {err}")
+            data['is_registered'] = False
+            data['error'] = 'User already exists'
+            return web.json_response(data)
+
+        select_stmt = users.select().where(users.c.username == user_email)
+        new_user = conn.execute(select_stmt)
+        for row in new_user:
+            print(f"ROW: {row}")
+            data['user_id'] = row[0]
+            data['username'] = row[1]
 
     # try:
     #     with sqlite3.connect(db) as conn:
@@ -403,8 +432,8 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
 async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
-    auth_token = session.get("auth_token")
-    user_id = session.get("user_id")
+    # auth_token = session.get("auth_token")
+    # user_id = session.get("user_id")
     print(f"LOG OUT {session}")
     db = request.app['db']
     db.dispose()
@@ -454,6 +483,8 @@ async def edit_handler(request: web.Request) -> web.json_response():
     session = await get_session(request)
     current_user = session.get("user_id")
     edited_data = await json_handler(request)
+    db = request.app['db']
+    db.dispose()
     print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
     photo_id = edited_data['photo']['id']
     filename = edited_data['photo']['filename']
@@ -468,6 +499,19 @@ async def edit_handler(request: web.Request) -> web.json_response():
         data['edit_successful'] = True
         data['warnings'] = "New date matched original"
 
+    try:
+        with db.connect() as conn:
+            date_update = (images.update().
+                           where(and_(images.c.user_id == current_user,
+                                      images.c.filename == filename,
+                                      images.c.id == photo_id)).
+                           values(date_taken=new_date))
+            conn.execute(date_update)
+            data['edit_successful'] = True
+    except exc.SQLAlchemyError as err:
+        print(f"{err}")
+        data['edit_successful'] = False
+        data['error'] = f"{err}"
     # try:
     #     with sqlite3.connect(db) as conn:
     #         cur = conn.cursor()
@@ -504,6 +548,8 @@ async def invite_handler(request: web.Request) -> web.json_response():
     invite_expires = datetime.timedelta(weeks=2)
     invite_expiry = today + invite_expires
     invite_code = generate_invite_code()
+    db = request.app['db']
+    db.dispose()
 
     if invite_access_level is None or len(invite_access_level) == 0:
         data['error'] = "Invalid access level. Please try again."
@@ -513,6 +559,19 @@ async def invite_handler(request: web.Request) -> web.json_response():
         return web.json_response(data)
 
     # Write logic to not duplicate invites
+    try:
+        with db.connect() as conn:
+            insert_stmt = (insert(invites).values(invited_by=current_user,
+                                                  invite_code=invite_code,
+                                                  invite_expires=invite_expiry,
+                                                  access_level=invite_access_level))
+            conn.execute(insert_stmt)
+            data['invite_sent'] = True
+            data['invite_code'] = invite_code
+    except exc.SQLAlchemyError as err:
+        print(f"DATABASE ERROR: {err}")
+        data['error'] = "Unable to complete invite."
+
     # try:
     #     with sqlite3.connect(db) as conn:
     #         cur = conn.cursor()
@@ -552,7 +611,68 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
     invitee_access_level = None
     invited_by = None
     invitee_key = None
+    db = request.app['db']
+    db.dispose()
     print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
+
+    try:
+        with db.connect() as conn:
+            select_stmt = (invites.select()
+                           .where(invites.c.invite_code == invitee_code))
+            selected_invites = conn.execute(select_stmt)
+
+            for row in selected_invites:
+                print(f"INVITES ROW: {row}")
+                tdy = str(datetime.datetime.now(datetime.timezone.utc))
+                if row[3].isoformat() < tdy:
+                    data['invite_redeemed'] = False
+                    data['error'] = "Invite code has expired."
+                    return web.json_response(data)
+                else:
+                    data['invite_redeemed'] = True
+                    invitee_access_level = row[4]
+                    invited_by = row[1]
+                    invitee_key = row[0]
+    except exc.SQLAlchemyError as err:
+        data['invite_redeemed'] = False
+        data['error'] = "There was a database error."
+        print(f"REDEEM INVITE ERROR: {err}")
+
+    if data['invite_redeemed']:
+        print(f"INVITE REDEEMED")
+        temp_password_uuid4 = uuid4()
+        temp_password = temp_password_uuid4.hex
+        with db.connect() as conn:
+            insert_users_stmt = (insert(users).values(username=invitee_email,
+                                                      password=temp_password,
+                                                      access_level=invitee_access_level))
+            conn.execute(insert_users_stmt)
+            new_user = conn.execute(users.select()
+                                    .where(and_(users.c.username == invitee_email,
+                                                users.c.password == temp_password)))
+            print(f"NEW USER: {new_user}")
+            new_user_id = None
+            for row in new_user:
+                new_user_id = row[0]
+            insert_users_relationship = (insert(user_to_user_relationships)
+                                         .values(user_id=new_user_id, linked_to=invited_by))
+            conn.execute(insert_users_relationship)
+            auth_token = uuid4()
+            auth_token = auth_token.hex
+            session['username'] = invitee_email
+            session['user_id'] = new_user_id
+            session['auth_token'] = auth_token
+            session['access_level'] = invitee_access_level
+            session['logged_in'] = True
+            data['username'] = invitee_email
+            data['user_id'] = new_user_id
+            data['user_access_level'] = invitee_access_level
+            print(f"{session}")
+            update_auth_token = (users.update().where(users.c.username == invitee_email)
+                                 .values(auth_token=auth_token))
+            conn.execute(update_auth_token)
+            delete_invite = (invites.delete().where(invites.c.invite_code == invitee_code))
+            conn.execute(delete_invite)
 
     # try:
     #     with sqlite3.connect(db) as conn:
@@ -625,6 +745,17 @@ async def reset_password_handler(request: web.Request) -> web.json_response:
     password_data = await json_handler(request)
     new_password = password_data["user"]["password"]
     current_user_id = session.get("user_id")
+    db = request.app['db']
+    db.dispose()
+
+    try:
+        with db.connect() as conn:
+            update_stmt = (users.update().where(users.c.id == current_user_id).values(password=new_password))
+            conn.execute(update_stmt)
+        data['password_reset_successful'] = True
+    except exc.SQLAlchemyError as err:
+        print(f"RESET PASSWORD ERROR: {err}")
+        data['error'] = "A database error occurred. Unable to reset password."
 
     # try:
     #     with sqlite3.connect(db) as conn:
@@ -651,6 +782,8 @@ async def upload_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     current_user = session.get("user_id")
     image_data = await request.post()
+    db = request.app['db']
+    db.dispose()
     counter = 0
     end_count = len(image_data)
     print(f"IMAGE DATA: {image_data}")
@@ -664,6 +797,103 @@ async def upload_handler(request: web.Request) -> web.json_response:
 
         print(f"Handling file {counter} of {end_count}: {filename}")
         # See if file has already been saved
+        try:
+            with db.connect() as conn:
+                query_stmt = (images.select()
+                              .where(and_(images.c.filename == filename, images.c.user_id == current_user)))
+                selected_images = conn.execute(query_stmt)
+                file_exists = False
+                for i in selected_images:
+                    print(f"IMAGE: {i}")
+                    if i[4] == filename:
+                        data['warnings'].append(f"Image {filename} already exists!")
+                        counter += 1
+                        file_exists = True
+                        break
+                if file_exists:
+                    continue
+                else:
+                    print(f"{filename} not found in database. Continuing to process and save file.")
+
+        except exc.SQLAlchemyError as err:
+            print(f"IMAGES ERROR: {err}")
+        else:
+            # If file doesn't already exist update database for new file and save
+            try:
+                with db.connect() as conn:
+                    insert_stmt = insert(images).values(user_id=current_user, filename=filename)
+                    conn.execute(insert_stmt)
+            except exc.SQLAlchemyError as err:
+                data['upload_successful'] = False
+                data['error'] = err
+                print(f"Could not save image: {err}")
+                return web.json_response(data)
+            else:
+                if image_type == 'mp4':
+                    with open(os.path.join('static/images/', filename), 'wb') as f:
+                        video_contents = image_file.read()
+                        f.write(video_contents)
+
+                    # No exif for video files
+                    vid_creation_date = datetime.datetime.today()
+
+                    with db.connect() as conn:
+                        update_date_stmt = (images.update()
+                                            .where(images.c.filname == filename)
+                                            .values(date_taken=vid_creation_date))
+                        conn.execute(update_date_stmt)
+
+                    print(f"creation_date for {filename}: {vid_creation_date}")
+                    data['upload_successful'] = True
+
+                    counter += 1
+                else:
+                    with open(os.path.join('static/images/', filename), 'wb') as f:
+                        image_contents = image_file.read()
+                        f.write(image_contents)
+
+                    # Get exif for date taken
+                    img = Image.open(image_file)
+                    exif_data = img.getexif()
+                    creation_exif_date = exif_data.get(36867)
+
+                    if creation_exif_date is None:
+                        creation_date = datetime.datetime.today()
+                    else:
+                        date_portion = creation_exif_date.split(' ')[0]
+                        time_portion = creation_exif_date.split(' ')[1]
+                        creation_year = date_portion.split(':')[0]
+                        creation_month = date_portion.split(':')[1]
+                        creation_day = date_portion.split(':')[2]
+                        creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
+
+                    # Resize for web and save
+                    orig_size = img.size
+                    width_percent = (300/float(orig_size[0]))
+                    new_height = int((float(orig_size[1]) * float(width_percent)))
+                    web_resized_img = img.resize((300, new_height))
+                    web_size_filename = "web_" + filename
+                    web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
+
+                    # Create thumbnail and save
+                    thumb_size = 128, 128
+                    thumb_filename = "thumb_" + filename
+                    img.thumbnail(thumb_size)
+                    img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
+
+                    with db.connect() as conn:
+                        update_img_stmt = (images.update()
+                                           .where(and_(images.c.user_id == current_user, images.c.filename == filename))
+                                           .values(date_taken=creation_date,
+                                                   web_size_filename=web_size_filename,
+                                                   thumbnail_filename=thumb_filename))
+                        conn.execute(update_img_stmt)
+
+                    print(f"creation_date for {filename}: {creation_date}")
+                    data['upload_successful'] = True
+
+                    counter += 1
+
         # try:
         #     with sqlite3.connect(db) as conn:
         #         cur = conn.cursor()

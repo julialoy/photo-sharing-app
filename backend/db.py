@@ -38,17 +38,17 @@ meta = MetaData()
 users = Table(
     'users', meta,
 
-    Column('id', Integer, primary_key=True),
-    Column('username', String(200), nullable=False),
+    Column('id', Integer, primary_key=True, autoincrement=True, unique=True),
+    Column('username', String(200), nullable=False, unique=True),
     Column('password', String(200), nullable=False),
     Column('access_level', String, nullable=False),
-    Column('auth_token', String(200), nullable=True)
+    Column('auth_token', String(200), nullable=True, unique=True)
 )
 
 people = Table(
     'people', meta,
 
-    Column('id', Integer, primary_key=True),
+    Column('id', Integer, primary_key=True, autoincrement=True, unique=True),
     Column('first_name', String, nullable=False),
     Column('last_name', String, nullable=True)
 )
@@ -56,7 +56,7 @@ people = Table(
 albums = Table(
     'albums', meta,
 
-    Column('id', Integer, primary_key=True),
+    Column('id', Integer, primary_key=True, autoincrement=True, unique=True),
     Column('album_name', String, nullable=True),
     Column('album_description', String, nullable=True),
     Column('created_by', Integer, ForeignKey('users.id', ondelete='CASCADE'))
@@ -65,15 +65,15 @@ albums = Table(
 images = Table(
     'images', meta,
 
-    Column('id', Integer, primary_key=True),
-    Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE')),
-    Column('album_key', Integer, ForeignKey('albums.id', ondelete='CASCADE')),
-    Column('person_key', Integer, ForeignKey('people.id', ondelete='CASCADE')),
+    Column('id', Integer, primary_key=True, autoincrement=True, unique=True),
+    Column('user_id', Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
+    Column('album_key', Integer, ForeignKey('albums.id', ondelete='CASCADE'), nullable=True),
+    Column('person_key', Integer, ForeignKey('people.id', ondelete='CASCADE'), nullable=True),
     Column('filename', String, nullable=False),
     Column('web_size_filename', String, nullable=True),
     Column('thumbnail_filename', String, nullable=True),
     Column('url', String, nullable=True),
-    Column('date_taken', DateTime, nullable=False),
+    Column('date_taken', DateTime, nullable=True),
     Column('title', String, nullable=True),
     Column('description', String, nullable=True)
 )
@@ -81,9 +81,9 @@ images = Table(
 invites = Table(
     'invites', meta,
 
-    Column('id', Integer, primary_key=True),
+    Column('id', Integer, primary_key=True, autoincrement=True, unique=True),
     Column('invited_by', Integer, ForeignKey('users.id', ondelete='CASCADE')),
-    Column('invite_code', String, nullable=False),
+    Column('invite_code', String, nullable=False, unique=True),
     Column('invite_expires', DateTime, nullable=False),
     Column('access_level', String, nullable=False),
 )
@@ -145,7 +145,7 @@ async def init_pg(app: web.Application) -> None:
     # )
     engine = create_engine(db_url)
     print(f"IN INIT_PG, ENGINE: {engine}")
-    # create_tables(engine)
+    create_tables(engine)
     clean_invite_db(engine)
     delete_all_auth_tokens(engine)
     # Session = sessionmaker(bind=engine)
