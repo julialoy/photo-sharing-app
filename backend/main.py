@@ -24,8 +24,6 @@ _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 async def init_app() -> web.Application:
     app = web.Application(client_max_size=100000000)
     app['config'] = config
-    # app["DB_PATH"] = db_path
-    # app['db'] = engine
     aiohttp_session.setup(app, EncryptedCookieStorage(SECRET_KEY))
     aiohttp_jinja2.setup(
         app,
@@ -43,7 +41,6 @@ async def init_app() -> web.Application:
     app.router.add_route("POST", "/reset-password", reset_password_handler)
     app.router.add_static("/static", path=str(BASE_PATH / "static"), name="static")
     app.router.add_static("/images", path=str(BASE_PATH / "static/images"), name="images")
-    # app.cleanup_ctx.append(init_db)
     cors = aiohttp_cors.setup(app, defaults={
         "http://localhost:3000": aiohttp_cors.ResourceOptions(
             allow_credentials=True,
@@ -67,17 +64,4 @@ async def init_app() -> web.Application:
 
 
 if __name__ == '__main__':
-#     # create_users_db()
-#     # create_images_db()
-#     # create_invites_db()
-#     # web.run_app(init_app(get_db_path()))
-    # db_url = DSN.format(**config["postgres"])
-    # engine = create_engine(db_url)
-    # print(f"ENGINE IS TYPE {type(engine)}")
-    # print(f"ENGINE: {engine}")
-    # Session = sessionmaker()
-    # Session.configure(bind=engine)
-    # create_tables(engine)
-    # clean_invite_db(engine)
-    # delete_all_auth_tokens(engine)
     web.run_app(init_app())

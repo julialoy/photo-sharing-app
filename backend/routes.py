@@ -1,37 +1,26 @@
-# import glob
-import os
-# import io
-from pathlib import Path
-# from datetime import date
 import asyncio
 import datetime
 # from email.message import EmailMessage
 import json
+import os
 import random
-# import sqlite3
 import string
-# from threading import Thread
-from typing import Awaitable, Callable, List
+from pathlib import Path
+from typing import Awaitable, Callable
 from uuid import uuid4
 
-from aiohttp_session import setup, get_session, new_session
 from aiohttp import web
+from aiohttp_session import setup, get_session, new_session
 # from aiosmtplib import send
 # from aiosmtplib import SMTP
 # from aiosmtplib import SMTPTimeoutError
 from PIL import Image
-
-import aiopg.sa
-import psycopg2
-from sqlalchemy import and_, exc, DateTime, insert, MetaData, Table, Column, ForeignKey, Integer, String, update
+from sqlalchemy import and_, exc, insert, Integer, String
 
 from db import (users, images, invites, albums, people,
                 people_to_user_relationships, people_to_album_relationships,
                 user_to_user_relationships)
 
-# from db import DATABASE
-
-# db = DATABASE
 BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
@@ -59,14 +48,6 @@ async def image_to_db(app: web.Application, user_id: Integer, album_id: Integer,
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGE TO DB: {err}")
 
-    # with sqlite3.connect(db) as conn:
-    #     cur = conn.cursor()
-    #     cur.execute("""
-    #     INSERT INTO images (user_key, album_key, child_key, filename, web_size_filename, thumbnail_filename, date_taken)
-    #     VALUES (?, ?, ?, ?, ?)
-    #     """, (user_id, album_id, child_id, filename, web_filename, thumbnail_filename, image_date))
-    #     conn.commit()
-
 
 async def retrieve_images(app: web.Application, current_user_id: Integer):
     """Retrieve images for specified IDs."""
@@ -87,43 +68,14 @@ async def retrieve_images(app: web.Application, current_user_id: Integer):
 
     try:
         with db.connect() as conn:
-            # results = conn.execute(images.select().where(images.c.user_id == current_user_id))
-            # # result_rows = results.fetchall()
-            # for result in results:
-            #     print(f"RESULT: {result}")
-            #     photo_data.append(parse_image_data(result)[0])
             for single_id in id_list:
                 results = conn.execute(images.select().where(images.c.user_id == single_id))
-                # additional_result_rows = additional_results.fetchall()
                 for res in results:
                     print(f"RESULT: {res}")
                     p = parse_image_data(res)[0]
                     photo_data.append(p)
-                    # if p['photo_id'] not in photo_data:
-                    #     photo_data.append(p)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
-
-    # with sqlite3.connect(db) as conn:
-    #     cur = conn.cursor()
-    #     cur.execute("""
-    #     SELECT * FROM images
-    #     WHERE user_id=(?)
-    #     """, (current_user_id,))
-    #
-    #     for row in cur:
-    #         photo_data.append(parse_image_data(row)[0])
-
-        #
-        # with sqlite3.connect(db) as conn:
-        #     new_cur = conn.cursor()
-        #     new_cur.execute("""
-        #     SELECT * FROM images
-        #     WHERE user_id=(?)
-        #     """, (single_id,))
-        #
-        #     for additional_row in new_cur:
-        #         photo_data.append(parse_image_data(additional_row)[0])
 
     print(f"PHOTO DATA: {photo_data}")
     return photo_data
@@ -211,7 +163,6 @@ async def index_handler(request: web.Request) -> web.json_response:
     print(f"USERNAME: {username}")
     print(f"SESSION: {session}")
     user_id = session.get("user_id")
-    # additional_id = None
     print(f"USER ID: {user_id}")
     db = request.app['db']
     db.dispose()
@@ -219,22 +170,10 @@ async def index_handler(request: web.Request) -> web.json_response:
     try:
         with db.connect() as conn:
             conn.execute(users.select().where(users.c.id == user_id))
-        # with sqlite3.connect(db) as conn:
-        #     cur = conn.cursor()
-        #     cur.execute("""
-        #     SELECT * FROM users
-        #     WHERE id=(?)
-        #     """, (user_id,))
-        #
-        #     for row in cur:
-        #         additional_id = row[5]
-    # except sqlite3.DatabaseError as err:
     except exc.SQLAlchemyError as err:
         print(f"ERROR RETRIEVING USER: {err}")
 
-    # print(f"ADDITIONAL IDs: {additional_id}")
     available_photos = await retrieve_images(request.app, user_id)
-    # parsed_photos = parse_image_data(available_photos)
     order_images(available_photos)
     return web.json_response(available_photos)
 
@@ -252,9 +191,6 @@ async def login_handler(request: web.Request) -> web.json_response:
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
     db = request.app['db']
     db.dispose()
-    # db_session = request.app['db_session']
-    # print(db_session)
-    # selected_user = db_session.query(users).filter_by(username=username, password=password).first()
     selected_user = None
 
     with db.connect() as conn:
@@ -285,67 +221,7 @@ async def login_handler(request: web.Request) -> web.json_response:
         with db.connect() as conn:
             update_stmt = users.update().where(users.c.username == username).values(auth_token=auth_token)
             conn.execute(update_stmt)
-    # with db.connect() as connection:
-    #     #selected_user_result = connection.execute(users.select().where(and_(users.c.username == username,
-    #      #                                                                   users.c.password == password)))
-    #     selected_user_result = connection.execute(db_session.query(users).filter_by(username=username, password=password))
-    #     print(selected_user_result)
-    #     selected_user = None
-    #     for row in selected_user_result:
-    #         selected_user = row
-    #         print(f"SELECTED USER ROW: {row}")
-    #     if not selected_user_result:
-    #         print(f"NO USER WITH THAT USERNAME AND PASSWORD FOUND: {selected_user_result}")
-    #         return data
-    #     else:
-    #         data['logged_in'] = True
-    #         data['user_id'] = selected_user[0]
-    #         data['username'] = selected_user[1]
-    #         data['access_level'] = selected_user[3]
-    #         # Delete auth token after certain amount of time (or log out?)
-    #         # This will require user to log back in
-    #         auth_token = uuid4()
-    #         auth_token = auth_token.hex
-    #         session["username"] = username
-    #         session["user_id"] = selected_user[0]
-    #         session["auth_token"] = auth_token
-    #         session["access_level"] = selected_user[3]
-    #         session["logged_in"] = True
-    #         print(f"LOGIN DATA: {data}")
-    #
-    #         await connection.execute(update(users).where(users.c.username == username)
-    #                                  .values(users.c.auth_token == auth_token))
 
-    # with sqlite3.connect(db) as conn:
-    #     cur = conn.cursor()
-    #     cur.execute("""
-    #     SELECT * FROM users
-    #     """)
-    #
-    #     for row in cur:
-    #         selected_user = row
-    #         if selected_user[1] == username and selected_user[2] == password:
-    #             data['logged_in'] = True
-    #             data['user_id'] = selected_user[0]
-    #             data['username'] = selected_user[1]
-    #             data['access_level'] = selected_user[3]
-    #             # Delete auth token after certain amount of time (or log out?)
-    #             # This will require user to log back in
-    #             auth_token = uuid4()
-    #             auth_token = auth_token.hex
-    #             session["username"] = username
-    #             session["user_id"] = selected_user[0]
-    #             session["auth_token"] = auth_token
-    #             session["access_level"] = selected_user[3]
-    #             session["logged_in"] = True
-    #             print(f"{session}")
-    #             cur.execute("""
-    #             UPDATE users
-    #             SET auth_token = (?)
-    #             WHERE username = (?)
-    #             """, (auth_token, username))
-    #             conn.commit()
-    #             break
     print("UPDATED")
     return web.json_response(data)
 
@@ -380,33 +256,6 @@ async def registration_handler(request: web.Request) -> web.json_response:
             data['user_id'] = row[0]
             data['username'] = row[1]
 
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         INSERT INTO users (username, password, access_level)
-    #         VALUES (?, ?, ?)
-    #         """, (user_email, user_password, user_access_level))
-    #         conn.commit()
-    # except sqlite3.IntegrityError as err:
-    #     print(f"DATABASE ERROR: {err}")
-    #     data['is_registered'] = False
-    #     data['error'] = 'User already exists'
-    #     return web.json_response({'error': 'User already exists'})
-    #
-    # with sqlite3.connect(db) as conn:
-    #     cur = conn.cursor()
-    #     cur.execute("""
-    #     SELECT * FROM users
-    #     WHERE username=? AND password=?
-    #     """, (user_email, user_password))
-    #
-    #     for row in cur:
-    #         selected_user = row
-    #
-    #     data['user_id'] = selected_user[0]
-    #     data['username'] = selected_user[1]
-
     print(data)
     return web.json_response(data)
 
@@ -432,11 +281,10 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
 async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
-    # auth_token = session.get("auth_token")
-    # user_id = session.get("user_id")
     print(f"LOG OUT {session}")
     db = request.app['db']
     db.dispose()
+
     try:
         with db.connect() as conn:
             update_stmt = users.update().where(users.c.username == username).values(auth_token=None)
@@ -450,26 +298,6 @@ async def logout_handler(request: web.Request) -> web.json_response:
     except exc.DatabaseError as err:
         print(f"ERROR: {err}")
         data = {"log_out_successful": False}
-
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         UPDATE users
-    #         SET auth_token = (?)
-    #         WHERE auth_token = (?)
-    #         AND username = (?)
-    #         """, (None, auth_token, username))
-    #         conn.commit()
-    #     session["user_id"] = None
-    #     session["username"] = None
-    #     session["auth_token"] = None
-    #     session["access_level"] = None
-    #     session["logged_in"] = False
-    #     data = {"log_out_successful": True}
-    # except sqlite3.DatabaseError as err:
-    #     print(f"Something went wrong: {err}")
-    #     data = {"log_out_successful": False}
 
     print(f"SESSION AFTER LOG OUT: {session}")
     return web.json_response(data)
@@ -512,23 +340,6 @@ async def edit_handler(request: web.Request) -> web.json_response():
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         UPDATE images
-    #         SET date_taken=(?)
-    #         WHERE id=(?)
-    #         AND user_id=(?)
-    #         AND filename=(?)
-    #         """, (new_date, photo_id, current_user, filename))
-    #         conn.commit()
-    #         data['edit_successful'] = True
-    #     print(f"EDIT SUCCESSFUL")
-    # except sqlite3.DatabaseError as err:
-    #     print(f"{err}")
-    #     data['edit_successful'] = False
-    #     data['error'] = f"{err}"
 
     return web.json_response(data)
 
@@ -539,7 +350,6 @@ async def invite_handler(request: web.Request) -> web.json_response():
     data = {"invite_sent": False, "invite_code": None, "error": None}
     session = await get_session(request)
     current_user = session.get("user_id")
-    # current_user_username = session.get("username")
     req_data = await json_handler(request)
     print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
     invite_email = req_data['invite']['email']
@@ -571,20 +381,6 @@ async def invite_handler(request: web.Request) -> web.json_response():
     except exc.SQLAlchemyError as err:
         print(f"DATABASE ERROR: {err}")
         data['error'] = "Unable to complete invite."
-
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         INSERT INTO invites (invited_by, invite_email, invite_code, invite_expires, access_level)
-    #         VALUES (?, ?, ?, ?, ?)
-    #         """, (current_user, invite_email, invite_code, invite_expiry, invite_access_level))
-    #         conn.commit()
-    #         data['invite_sent'] = True
-    #         data['invite_code'] = invite_code
-    # except sqlite3.DatabaseError as err:
-    #     print(f"DATABASE ERROR: {err}")
-    #     data['error'] = "Unable to complete invite."
 
     # Send invite email
     # try:
@@ -674,64 +470,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             delete_invite = (invites.delete().where(invites.c.invite_code == invitee_code))
             conn.execute(delete_invite)
 
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         SELECT * FROM invites
-    #         WHERE invite_email=? and invite_code=?
-    #         """, (invitee_email, invitee_code))
-    #
-    #         for row in cur:
-    #             print(f"INVITES ROW: {row}")
-    #             tdy = str(datetime.datetime.now(datetime.timezone.utc))
-    #             if row[4] < tdy:
-    #                 data["invite_redeemed"] = False
-    #                 data["error"] = "Invite code has expired."
-    #                 return web.json_response(data)
-    #             else:
-    #                 data["invite_redeemed"] = True
-    #                 invitee_access_level = row[5]
-    #                 invited_by = row[1]
-    #                 invitee_key = row[0]
-    # except sqlite3.DatabaseError as err:
-    #     data["invite_redeemed"] = False
-    #     data["error"] = "There was a database error."
-    #     print(f"REDEEM INVITE ERROR: {err}")
-    #
-    # if data["invite_redeemed"]:
-    #     print(f"INVITE REDEEMED")
-    #     temp_password_uuid4 = uuid4()
-    #     temp_password = temp_password_uuid4.hex
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         INSERT INTO users (username, password, access_level, linked_to)
-    #         VALUES (?, ?, ?, ?)
-    #         """, (invitee_email, temp_password, invitee_access_level, invited_by))
-    #         auth_token = uuid4()
-    #         auth_token = auth_token.hex
-    #         session["username"] = invitee_email
-    #         session["user_id"] = cur.lastrowid
-    #         session["auth_token"] = auth_token
-    #         session["access_level"] = invitee_access_level
-    #         session["logged_in"] = True
-    #         data["username"] = invitee_email
-    #         data["user_id"] = cur.lastrowid
-    #         data["user_access_level"] = invitee_access_level
-    #         print(f"{session}")
-    #         cur.execute("""
-    #         UPDATE users
-    #         SET auth_token = (?)
-    #         WHERE username = (?)
-    #         """, (auth_token, invitee_email))
-    #         conn.commit()
-    #         cur.execute("""
-    #         DELETE FROM invites
-    #         WHERE id=?
-    #         """, (invitee_key,))
-    #         conn.commit()
-
     print(f"INVITE DATA: {data}")
     return web.json_response(data)
 
@@ -756,20 +494,6 @@ async def reset_password_handler(request: web.Request) -> web.json_response:
     except exc.SQLAlchemyError as err:
         print(f"RESET PASSWORD ERROR: {err}")
         data['error'] = "A database error occurred. Unable to reset password."
-
-    # try:
-    #     with sqlite3.connect(db) as conn:
-    #         cur = conn.cursor()
-    #         cur.execute("""
-    #         UPDATE users
-    #         SET password=(?)
-    #         WHERE id=(?)
-    #         """, (new_password, current_user_id))
-    #         conn.commit()
-    #         data["password_reset_successful"] = True
-    # except sqlite3.DatabaseError as err:
-    #     print(f"RESET PASSWORD ERROR: {err}")
-    #     data["error"] = "A database error occurred. Unable to reset password."
 
     return web.json_response(data)
 
@@ -893,132 +617,5 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     data['upload_successful'] = True
 
                     counter += 1
-
-        # try:
-        #     with sqlite3.connect(db) as conn:
-        #         cur = conn.cursor()
-        #         cur.execute("""
-        #         SELECT *
-        #         FROM images
-        #         WHERE filename=(?) AND user_id=(?)
-        #         """, (filename, current_user))
-        #
-        #         file_exists = False
-        #
-        #         for row in cur:
-        #             if row[4] == filename:
-        #                 print(f"FOUND FILENAME: {filename}")
-        #                 data['warnings'].append(f"Image {filename} already exists!")
-        #                 counter += 1
-        #                 file_exists = True
-        #                 break
-        #
-        #         if file_exists:
-        #             continue
-        #         else:
-        #             print(f"{filename} not found in database. Continuing to process and save file.")
-        # except sqlite3.DatabaseError as err:
-        #     print(f"DATABASE ERROR: {err}")
-        # else:
-        #
-        #     # If file doesn't already exist update database for new file and save
-        #     try:
-        #         with sqlite3.connect(db) as conn:
-        #             cur = conn.cursor()
-        #             cur.execute("""
-        #             INSERT INTO images (user_id, filename)
-        #             VALUES (?, ?)
-        #             """, (current_user, filename))
-        #             conn.commit()
-        #     except sqlite3.DatabaseError as err:
-        #         data['upload_successful'] = False
-        #         data['error'] = err
-        #         print(f"Could not save image: {err}")
-        #         return web.json_response(data)
-        #     else:
-        #         if image_type == 'mp4':
-        #             with open(os.path.join('static/images/', filename), 'wb') as f:
-        #                 video_contents = image_file.read()
-        #                 f.write(video_contents)
-        #
-        #             # No exif for video files
-        #             vid_creation_date = datetime.datetime.today()
-        #
-        #             # Resize for web and save
-        #             # orig_vid_size = image_file.size
-        #             # vid_width_percent = (300 / float(orig_vid_size[0]))
-        #             # vid_new_height = int((float(orig_vid_size[1]) * float(vid_width_percent)))
-        #             # web_resized_vid = image_file.resize((300, vid_new_height))
-        #             # web_size_vid_filename = "web_" + filename
-        #             # web_resized_vid.save('static/images/' + web_size_vid_filename, image_type.upper(), quality=95)
-        #
-        #             # Create thumbnail and save
-        #             # vid_thumb_size = 128, 128
-        #             # vid_thumb_filename = "thumb_" + filename
-        #             # img.thumbnail(thumb_size)
-        #             # img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
-        #
-        #             with sqlite3.connect(db) as conn:
-        #                 cur = conn.cursor()
-        #                 cur.execute("""
-        #                 UPDATE images
-        #                 SET date_taken=(?)
-        #                 WHERE user_id=(?)
-        #                 AND filename=(?)
-        #                 """, (vid_creation_date, current_user, filename))
-        #                 conn.commit()
-        #
-        #             print(f"creation_date for {filename}: {vid_creation_date}")
-        #             data['upload_successful'] = True
-        #
-        #             counter += 1
-        #         else:
-        #             with open(os.path.join('static/images/', filename), 'wb') as f:
-        #                 image_contents = image_file.read()
-        #                 f.write(image_contents)
-        #
-        #             # Get exif for date taken
-        #             img = Image.open(image_file)
-        #             exif_data = img.getexif()
-        #             creation_exif_date = exif_data.get(36867)
-        #
-        #             if creation_exif_date is None:
-        #                 creation_date = datetime.datetime.today()
-        #             else:
-        #                 date_portion = creation_exif_date.split(' ')[0]
-        #                 time_portion = creation_exif_date.split(' ')[1]
-        #                 creation_year = date_portion.split(':')[0]
-        #                 creation_month = date_portion.split(':')[1]
-        #                 creation_day = date_portion.split(':')[2]
-        #                 creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
-        #
-        #             # Resize for web and save
-        #             orig_size = img.size
-        #             width_percent = (300/float(orig_size[0]))
-        #             new_height = int((float(orig_size[1]) * float(width_percent)))
-        #             web_resized_img = img.resize((300, new_height))
-        #             web_size_filename = "web_" + filename
-        #             web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
-        #
-        #             # Create thumbnail and save
-        #             thumb_size = 128, 128
-        #             thumb_filename = "thumb_" + filename
-        #             img.thumbnail(thumb_size)
-        #             img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
-        #
-        #             with sqlite3.connect(db) as conn:
-        #                 cur = conn.cursor()
-        #                 cur.execute("""
-        #                 UPDATE images
-        #                 SET date_taken=(?), web_size_filename=(?), thumbnail_filename=(?)
-        #                 WHERE user_id=(?)
-        #                 AND filename=(?)
-        #                 """, (creation_date, web_size_filename, thumb_filename, current_user, filename))
-        #                 conn.commit()
-        #
-        #             print(f"creation_date for {filename}: {creation_date}")
-        #             data['upload_successful'] = True
-        #
-        #             counter += 1
 
     return web.json_response(data)
