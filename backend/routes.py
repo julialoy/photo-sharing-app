@@ -114,7 +114,7 @@ def order_images(parsed_image_array):
 
 def fix_image_orientation(im):
     """
-    Taken from Stack Overflow answer for exif orientation.
+    Taken from Stack Overflow answer for fixing exif orientation.
     -----------
     Apply Image.transpose to ensure 0th row of pixels is at the visual
     top of the image, and 0th column is the visual left-hand side.
@@ -360,6 +360,7 @@ async def edit_handler(request: web.Request) -> web.json_response():
     else:
         orig_date = edited_data['photo']['oldDate']
     new_date = edited_data['photo']['newDate']
+    new_desc = edited_data['photo']['newPhotoDesc']
     print(f"EDIT ROUTE: orig_date: {orig_date}, new_date: {new_date}")
 
     if orig_date == new_date:
@@ -372,7 +373,7 @@ async def edit_handler(request: web.Request) -> web.json_response():
                            where(and_(images.c.user_id == current_user,
                                       images.c.filename == filename,
                                       images.c.id == photo_id)).
-                           values(date_taken=new_date))
+                           values(date_taken=new_date, description=new_desc))
             conn.execute(date_update)
             data['edit_successful'] = True
     except exc.SQLAlchemyError as err:

@@ -11,11 +11,13 @@ class PhotoModal extends PureComponent {
       editToggled: false,
       displayDate: this.props.photoDate,
       date: this.props.photoDate,
+      photoTitle: this.props.photoTitle,
+      photoDesc: this.props.photoDesc,
       error: ""
     };
 
     this.toggleEditForm = this.toggleEditForm.bind(this);
-    this.saveNewDate = this.saveNewDate.bind(this);
+    this.saveNewData = this.saveNewData.bind(this);
     this.closeEditForm = this.closeEditForm.bind(this);
     this.handleModalClose = this.handleModalClose.bind(this);
     this.handleChange = this.handleChange.bind(this);
@@ -35,10 +37,17 @@ class PhotoModal extends PureComponent {
     });
   }
 
-  saveNewDate(evt) {
+  saveNewData(evt) {
     evt.preventDefault();
     let validSave = true
-    const newPhotoDate = this.state.date;
+    let newPhotoDate;
+    const newPhotoDesc = this.state.photoDesc;
+    
+    if (this.state.date) {
+      newPhotoDate = this.state.date;
+    } else {
+      newPhotoDate = this.props.photoDate;
+    }
 
     if (!moment(newPhotoDate).isValid()) {
       validSave = false
@@ -51,7 +60,9 @@ class PhotoModal extends PureComponent {
           id: this.props.photoId,
           filename: this.props.photoName,
           oldDate: this.props.photoDate,
-          newDate: newPhotoDate
+          newDate: newPhotoDate,
+          oldPhotoDesc: this.props.photoDesc,
+          newPhotoDesc: newPhotoDesc
         }
       },
       {withCredentials: true}
@@ -59,7 +70,8 @@ class PhotoModal extends PureComponent {
       .then(response => {
         if (response.data.edit_successful) {
           this.setState({
-            displayDate: newPhotoDate
+            displayDate: newPhotoDate,
+            photoDesc: newPhotoDesc
           });
         }
         else {
@@ -73,13 +85,16 @@ class PhotoModal extends PureComponent {
       this.setState({
         editToggled: false,
         displayDate: newPhotoDate,
-        date: newPhotoDate
+        date: newPhotoDate,
+        photoDesc: newPhotoDesc
       });
     } else {
       this.setState({
         editToggled: false,
         displayDate: this.props.photoDate,
         date: this.props.photoDate,
+        photoTitle: this.props.photoTitle,
+        photoDesc: this.props.photoDesc,
         error: "Invalid date entered"
       });
     }
@@ -105,6 +120,8 @@ class PhotoModal extends PureComponent {
       editToggled: false,
       displayDate: "",
       date: "",
+      photoTitle: "",
+      photoDesc: "",
       error: ""
     });
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -121,7 +138,9 @@ class PhotoModal extends PureComponent {
     this.setState({
       editToggled: false,
       displayDate: this.props.photoDate,
-      date: this.props.photoDate
+      date: this.props.photoDate,
+      photoTitle: this.props.photoTitle,
+      photoDesc: this.props.photoDesc
     });
   }
 
@@ -137,18 +156,23 @@ class PhotoModal extends PureComponent {
     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
     const photoDateDiv = <div className="photo-date">
+      {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
       {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
       <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
     </div>
 
-    const dateEditForm = <form className="edit-date-form form-row" onSubmit={this.saveNewDate}>
-      <div className="col">
+    const dateEditForm = <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
+      <div className="form-group mb-2">
+        <label htmlFor="photoDesc">Photo description:</label>
+        <textarea className="form-control form-control-sm" type="text" rows="1" defaultValue={this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc} name="photoDesc" id="photoDesc" onChange={this.handleChange}></textarea>
+      </div>
+      <div className="form-group mb-2">
         <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
       </div>
-      <div className="col" id="photo-form-btn">
+      <div className="form-group mb-2" id="photo-form-btn">
         <button className="btn btn-dark" type="submit">Save</button>
       </div>
-      <div className="col">
+      <div className="form-group mb-2" id="photo-cancel-btn">
         <button className="btn btn-dark" type="button" onClick={this.handleCancel}>Cancel</button>
       </div>
     </form>
@@ -178,20 +202,23 @@ class PhotoModal extends PureComponent {
        <div className="modal-backdrop">
         <div className="modal" display="block" id="photo-modal">
           <div>
-          <div>
-            <div className="modal-header">
-              <button className="close" onClick={this.handleModalClose}>
-                  <span>&times;</span>
-              </button>
+            <div>
+              <div className="modal-header">
+                <h5>{this.props.photoTitle}</h5>
+                <button className="close" onClick={this.handleModalClose}>
+                    <span>&times;</span>
+                </button>
               </div>
               <div className="modal-body text-center">
-                {mediaType === "mp4" ? videoElement : imgElement}
+                  {mediaType === "mp4" ? videoElement : imgElement}
               </div>
               <div className="modal-footer">
-                {this.state.error ? errorMessage: null}
-                <div className="row">
-                  {this.state.editToggled ? dateEditForm : photoDateDiv}
-                </div>
+                  <div className="row">
+                    {this.state.error ? errorMessage: null}
+                  </div>
+                  <div className="row">
+                    {this.state.editToggled ? dateEditForm : photoDateDiv}
+                  </div>
               </div>
             </div>
           </div>

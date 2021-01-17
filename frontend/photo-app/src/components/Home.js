@@ -18,6 +18,8 @@ class Home extends PureComponent {
       photoFilename: "",
       fullSizeLoc: "",
       fullSizeDate: "",
+      photoTitle: "",
+      photoDesc: "",
       showSettingsModal: false
     };
 
@@ -120,6 +122,8 @@ class Home extends PureComponent {
       showPhotoModal: true,
       photoId: photoData.photo_id,
       photoFilename: photoData.filename,
+      photoTitle: photoData.title,
+      photoDesc: photoData.description,
       fullSizeLoc: photoData.full_size_loc,
       fullSizeDate: photoDateStrip ? photoDateStrip : photoData.date_taken
     });
@@ -256,7 +260,9 @@ class Home extends PureComponent {
           photoId={this.state.photoId}
           photoName={this.state.photoFilename}
           fullPhoto={this.state.fullSizeLoc}
-          photoDate={this.state.fullSizeDate} 
+          photoDate={this.state.fullSizeDate}
+          photoTitle={this.state.photoTitle} 
+          photoDesc={this.state.photoDesc}
           onClose={this.handlePhotoModalClose}
           handlePhotoDateChange={this.props.handlePhotoDateChange} 
         />
