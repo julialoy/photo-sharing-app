@@ -129,10 +129,12 @@ class Upload extends Component {
   }
 
   handleThumbRender(filesArray) {
+    console.log("IN HANDLE THUMB RENDER: ", filesArray);
+    let uploadArray = [];
     for (let x = 0; x < filesArray.length; x++) {
       let fileExtension = filesArray[x].fileName.split('.')[1];
       if (fileExtension === 'mp4') {
-        return (
+        uploadArray.push(
           <span className="upload-thumb-container">
             <video className="video-thumb" key={filesArray[x].fileName + "-video"}>
               <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview}/>
@@ -140,9 +142,10 @@ class Upload extends Component {
           </span>
         );
       } else {
-        return <span className="upload-thumb-container"><img key={filesArray[x].fileName} className="upload-thumb" src={filesArray[x].preview} alt="" /></span>;
+        uploadArray.push(<span className="upload-thumb-container"><img key={filesArray[x].fileName} className="upload-thumb" src={filesArray[x].preview} alt="" /></span>);
       }
     }
+    return uploadArray;
   }
 
   render() {
@@ -188,9 +191,9 @@ class Upload extends Component {
                     <div {...getRootProps({ className: "dropzone" })}>
                       <input {...getInputProps()} />
                       <p>Drag and drop files to upload</p>
-                      <p className="upload-para"> 
+                      {/* <p className="upload-para">  */}
                         {this.handleThumbRender(this.state.files)}
-                      </p>
+                      {/* </p> */}
                     </div>
                   </div>
                 )}

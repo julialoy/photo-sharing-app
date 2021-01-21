@@ -49,9 +49,9 @@ body.modal-open {
   display: block;
 }
 
-.photo-date {
+/* .photo-date {
   margin-right: 2em;
-}
+} */
 
 #date {
   margin-right: 1em;
@@ -101,6 +101,10 @@ video.image-element-class {
   margin-left: 2.3em;
 }
 
+.upload-thumb-container {
+  display: inline;
+}
+
 .upload-thumb,
 .video-thumb {
   max-width: 7.5em;
@@ -112,7 +116,7 @@ video.image-element-class {
 .upload-para {
   max-width: 8em;
   max-height: 8em;
-  display: block;
+  display: inline;
 }
 /* #video-thumb,
 #video-thumb-source,
@@ -129,6 +133,7 @@ video.image-element-class {
   top: 7;
   left: 2;
 }
+
 #thumb-list {
   list-style: none;
 }

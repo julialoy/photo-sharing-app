@@ -155,24 +155,28 @@ class PhotoModal extends PureComponent {
     const mediaType = photoName.split('.')[1];
     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
-    const photoDateDiv = <div className="photo-date">
-      {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
-      {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")} 
-      <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
+    const photoDateDiv = <div className="photo-date row justify-content-between">
+      <span>
+        {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
+      </span>
+      <span>
+        {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")}
+        <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
+      </span>
     </div>
 
     const dateEditForm = <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
-      <div className="form-group mb-2">
+      <div className="form-group mx-3">
         <label htmlFor="photoDesc">Photo description:</label>
         <textarea className="form-control form-control-sm" type="text" rows="1" defaultValue={this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc} name="photoDesc" id="photoDesc" onChange={this.handleChange}></textarea>
       </div>
-      <div className="form-group mb-2">
+      <div className="form-group mx-3">
         <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
       </div>
-      <div className="form-group mb-2" id="photo-form-btn">
+      <div className="form-group mx-3" id="photo-form-btn">
         <button className="btn btn-dark" type="submit">Save</button>
       </div>
-      <div className="form-group mb-2" id="photo-cancel-btn">
+      <div className="form-group mx-3" id="photo-cancel-btn">
         <button className="btn btn-dark" type="button" onClick={this.handleCancel}>Cancel</button>
       </div>
     </form>
@@ -201,26 +205,32 @@ class PhotoModal extends PureComponent {
     return (
        <div className="modal-backdrop">
         <div className="modal" display="block" id="photo-modal">
-          <div>
-            <div>
-              <div className="modal-header">
-                <h5>{this.props.photoTitle}</h5>
-                <button className="close" onClick={this.handleModalClose}>
-                    <span>&times;</span>
-                </button>
-              </div>
-              <div className="modal-body text-center">
-                  {mediaType === "mp4" ? videoElement : imgElement}
-              </div>
-              <div className="modal-footer">
-                  <div className="row">
-                    {this.state.error ? errorMessage: null}
-                  </div>
-                  <div className="row">
-                    {this.state.editToggled ? dateEditForm : photoDateDiv}
-                  </div>
-              </div>
+          <div className="modal-header">
+            <h5>{this.props.photoTitle}</h5>
+            <button className="close" onClick={this.handleModalClose}>
+              <span>&times;</span>
+            </button>
+          </div>
+          <div className="modal-body">
+            <div className="text-center">
+              {mediaType === "mp4" ? videoElement : imgElement}
             </div>
+            <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
+              <span>
+                {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
+              </span>
+              <span>
+                {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")}
+              </span>
+            </div>
+          </div>
+          <div className="modal-footer container-fluid justify-content-between">
+            {/* <div className="row">
+              {this.state.error ? errorMessage : null}
+            </div>
+            <div className="row">
+              {this.state.editToggled ? dateEditForm : photoDateDiv}
+            </div> */}
           </div>
         </div>
       </div>
