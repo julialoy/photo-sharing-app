@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import moment from 'moment';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 class PhotoModal extends PureComponent {
   constructor(props) {
@@ -24,11 +25,13 @@ class PhotoModal extends PureComponent {
     this.handleCancel = this.handleCancel.bind(this);
     this.handleCloseError = this.handleCloseError.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
+    this.createPeopleTagList = this.createPeopleTagList.bind(this);
   }
 
   static propTypes = {
     onClose: PropTypes.func,
-    fullPhoto: PropTypes.string
+    fullPhoto: PropTypes.string,
+    peopleTags: PropTypes.array
   };
 
   toggleEditForm() {
@@ -150,36 +153,58 @@ class PhotoModal extends PureComponent {
     });
   }
 
+  createPeopleTagList(tagsArray) {
+    let availableTagArray = [];
+    for (let x = 0; x < tagsArray.length; x++) {
+      availableTagArray.push(
+        <option key={x + '-tag'}>
+          {tagsArray[x]}
+        </option>
+      )
+    }
+    return availableTagArray;
+  }
+
   render() {
     const {show, photoName, fullPhoto, photoDate} = this.props;
+    const availablePeopleTags = this.createPeopleTagList(this.props.peopleTags);
     const mediaType = photoName.split('.')[1];
-    const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
-    const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>);
-    const photoDateDiv = <div className="photo-date row justify-content-between">
+/*     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
+    const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>); */
+    const photoDateDiv = <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
       <span>
         {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
       </span>
       <span>
         {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")}
-        <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button>
+        <button className="close" type="button" onClick={this.toggleEditForm} id="date-edit-btn"><span><FontAwesomeIcon icon="edit" /></span></button>
+        {/* <button type="button" className="btn btn-dark" onClick={this.toggleEditForm} id="date-edit-btn">Edit</button> */}
       </span>
     </div>
 
-    const dateEditForm = <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
-      <div className="form-group mx-3">
-        <label htmlFor="photoDesc">Photo description:</label>
-        <textarea className="form-control form-control-sm" type="text" rows="1" defaultValue={this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc} name="photoDesc" id="photoDesc" onChange={this.handleChange}></textarea>
-      </div>
-      <div className="form-group mx-3">
-        <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
-      </div>
-      <div className="form-group mx-3" id="photo-form-btn">
-        <button className="btn btn-dark" type="submit">Save</button>
-      </div>
-      <div className="form-group mx-3" id="photo-cancel-btn">
-        <button className="btn btn-dark" type="button" onClick={this.handleCancel}>Cancel</button>
-      </div>
-    </form>
+    const dateEditForm = <div className="d-flex mt-4 justify-content-between">
+      <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
+        <div className="form-group mx-3">
+          <select multiple className="form-control" id="person-tag-select">
+            {availablePeopleTags}
+          </select>
+        </div>
+        <div className="form-group mx-3">
+          {/* <label htmlFor="photoDesc">Photo description:</label> */}
+          <textarea className="form-control form-control-sm" type="text" rows="2" defaultValue={this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc} name="photoDesc" id="photoDesc" onChange={this.handleChange}></textarea>
+        </div>
+        <div className="form-group mx-3">
+          <input className="form-control form-control-sm" type="date" defaultValue={this.state.date ? this.state.date : this.props.photoDate} min="1800-01-01" max="2050-01-01" name="date" id="date" onChange={this.handleChange} />
+        </div>
+        <div className="form-group mx-3" id="photo-form-btn">
+          <button className="btn btn-dark" type="submit">Save</button>
+        </div>
+        <div className="form-group mx-3" id="photo-cancel-btn">
+          <i className="fas fa-pencil-alt"></i>
+          <button className="btn btn-dark" type="button" onClick={this.handleCancel}>Cancel</button>
+        </div>
+      </form>
+    </div>
 
     const errorMessage = <div className="alert alert-danger alert-dismissible fade show row" role="alert">
       <button type="button" className="close" data-dismiss="alert" aria-label="close" onClick={this.handleCloseError}>
@@ -212,25 +237,22 @@ class PhotoModal extends PureComponent {
             </button>
           </div>
           <div className="modal-body">
-            <div className="text-center">
+            <div className="text-center" id="media-element">
               {mediaType === "mp4" ? videoElement : imgElement}
             </div>
-            <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
+            {this.state.editToggled ? dateEditForm : photoDateDiv}
+{/*             <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
               <span>
                 {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
               </span>
               <span>
                 {this.state.displayDate ? moment(this.state.displayDate).format("dddd, MMM Do YYYY") : moment(photoDate).format("dddd, MMM Do YYYY")}
               </span>
-            </div>
-          </div>
-          <div className="modal-footer container-fluid justify-content-between">
-            {/* <div className="row">
-              {this.state.error ? errorMessage : null}
-            </div>
-            <div className="row">
-              {this.state.editToggled ? dateEditForm : photoDateDiv}
             </div> */}
+          </div>
+          <div className="modal-footer">
+              {this.state.error ? errorMessage : null}
+              {/* {this.state.editToggled ? dateEditForm : photoDateDiv} */}
           </div>
         </div>
       </div>

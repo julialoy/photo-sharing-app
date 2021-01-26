@@ -49,6 +49,11 @@ body.modal-open {
   display: block;
 }
 
+.full-size-photo {
+  max-width: 100vw;
+  max-height: 70vh;
+}
+
 /* .photo-date {
   margin-right: 2em;
 } */
@@ -81,11 +86,6 @@ body.modal-open {
 video.image-element-class {
   height: auto;
   max-width: 300px;
-}
-
-.full-size-photo {
-  max-width: 100vw;
-  max-height: 70vh;
 }
 
 /** UPLOAD **/

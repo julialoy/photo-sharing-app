@@ -40,6 +40,7 @@ class Home extends PureComponent {
     isAuthed: PropTypes.bool.isRequired,
     currentUser: PropTypes.object,
     photos: PropTypes.array,
+    peopleTags: PropTypes.array,
     havePhotos: PropTypes.bool,
     handleSuccessfulLogOut: PropTypes.func,
     retrievePhotos: PropTypes.func,
@@ -253,6 +254,7 @@ class Home extends PureComponent {
           isAuthed={isAuthed}
           show={this.state.showSettingsModal}
           currentUser={currentUser}
+          peopleTags={this.props.peopleTags}
           onClose={this.handleSettingsModalClose}
         />
         <PhotoModal 
@@ -264,7 +266,8 @@ class Home extends PureComponent {
           photoTitle={this.state.photoTitle} 
           photoDesc={this.state.photoDesc}
           onClose={this.handlePhotoModalClose}
-          handlePhotoDateChange={this.props.handlePhotoDateChange} 
+          handlePhotoDateChange={this.props.handlePhotoDateChange}
+          peopleTags={this.props.peopleTags}
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
         </div>

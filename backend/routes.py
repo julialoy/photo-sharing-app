@@ -20,7 +20,7 @@ from sqlalchemy import and_, exc, insert, Integer, String
 
 from db import (users, images, invites, albums, people,
                 people_to_user_relationships, people_to_album_relationships,
-                user_to_user_relationships)
+                user_to_user_relationships, people_to_image_relationships)
 
 BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
@@ -32,9 +32,33 @@ def require_login(func: _WebHandler) -> _WebHandler:
     return func
 
 
+async def retrieve_people_tags(app: web.Application, current_user_id: Integer):
+    """Retrieve and return a list of people tags added by the current user."""
+    people_tag_names = []
+    db = app['db']
+    db.dispose()
+
+    try:
+        with db.connect() as conn:
+            query_stmt = (people_to_user_relationships.select()
+                          .where(people_to_user_relationships.c.linked_to == current_user_id))
+            user_people = conn.execute(query_stmt)
+            for person in user_people:
+                person_query = (people.select().where(people.c.id == person.person_id))
+                person_info = conn.execute(person_query)
+                for p in person_info:
+                    print(f"PERSON INFO: {p}")
+                    new_person = p.first_name + ' ' + p.last_name
+                    people_tag_names.append(new_person)
+    except exc.SQLAlchemyError as err:
+        print(f"RETRIEVE PEOPLE TAGS ERROR: {err}")
+
+    return people_tag_names
+
+
 async def image_to_db(app: web.Application, user_id: Integer, album_id: Integer,
-                child_id: Integer, filename: String, web_filename: String,
-                thumbnail_filename: String, image_date: String) -> None:
+                      child_id: Integer, filename: String, web_filename: String,
+                      thumbnail_filename: String, image_date: String) -> None:
     """Add uploaded image information to db"""
     db = app['db']
     db.dipose()
@@ -197,6 +221,7 @@ async def json_handler(self, *, loads=json.loads):
 @router.get("/")
 # @require_login
 async def index_handler(request: web.Request) -> web.json_response:
+    data = {"photos": None, "tags": None}
     session = await get_session(request)
     username = session.get("username")
     print(f"USERNAME: {username}")
@@ -214,7 +239,10 @@ async def index_handler(request: web.Request) -> web.json_response:
 
     available_photos = await retrieve_images(request.app, user_id)
     order_images(available_photos)
-    return web.json_response(available_photos)
+    people_tags = await retrieve_people_tags(request.app, user_id)
+    data['photos'] = available_photos
+    data['tags'] = people_tags
+    return web.json_response(data)
 
 
 @asyncio.coroutine
@@ -380,6 +408,43 @@ async def edit_handler(request: web.Request) -> web.json_response():
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
+
+    return web.json_response(data)
+
+
+@router.post("/add-person")
+@require_login
+async def add_person_handler(request: web.Request) -> web.json_response():
+    data = {"person_added": False, "error": None}
+    session = await get_session(request)
+    current_user = session.get("user_id")
+    req_data = await json_handler(request)
+    new_first_name = req_data['newPerson']['first']
+    new_last_name = req_data['newPerson']['last']
+    db = request.app['db']
+    db.dispose()
+
+    if len(new_first_name) == 0 and len(new_last_name) == 0:
+        data['error'] = "No person data provided. Could not save."
+        return web.json_response(data)
+
+    try:
+        with db.connect() as conn:
+            prsn_insert_stmt = (insert(people)
+                                .values(first_name=new_first_name, last_name=new_last_name)
+                                .returning(people.c.id))
+            rtrn_stmt = conn.execute(prsn_insert_stmt)
+            print(f"INSERT STATEMENT: {prsn_insert_stmt}")
+            person_id = rtrn_stmt.fetchone()[0]
+            print(f"PERSON_ID: {person_id}")
+            prsn_to_prsn = insert(people_to_user_relationships).values(person_id=person_id, linked_to=current_user)
+            conn.execute(prsn_to_prsn)
+
+            data['person_added'] = True
+            data['error'] = None
+    except exc.SQLAlchemyError as err:
+        print(f"DATABASE ERROR: {err}")
+        data['error'] = "Unable to save new person."
 
     return web.json_response(data)
 

@@ -16,7 +16,8 @@ __all__ = ['users', 'people', 'albums',
            'images', 'invites',
            'user_to_user_relationships',
            'people_to_user_relationships',
-           'people_to_album_relationships']
+           'people_to_album_relationships',
+           'people_to_image_relationships']
 meta = MetaData()
 
 users = Table(
@@ -93,12 +94,20 @@ people_to_album_relationships = Table(
     Column('contains', Integer, ForeignKey('people.id', ondelete='CASCADE'))
 )
 
+people_to_image_relationships = Table(
+    'people_to_image_relationships', meta,
+
+    Column('image_id', Integer, ForeignKey('images.id', ondelete='CASCADE')),
+    Column('person_id', Integer, ForeignKey('people.id', ondelete='CASCADE'))
+)
+
 
 def create_tables(engine):
     print(f"CREATING TABLES")
     table_meta = MetaData()
     table_meta.create_all(bind=engine, tables=[users, people, albums, images, invites, user_to_user_relationships,
-                                               people_to_user_relationships, people_to_album_relationships])
+                                               people_to_user_relationships, people_to_album_relationships,
+                                               people_to_image_relationships])
 
 
 async def init_pg(app: web.Application) -> None:
