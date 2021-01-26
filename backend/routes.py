@@ -32,7 +32,7 @@ def require_login(func: _WebHandler) -> _WebHandler:
     return func
 
 
-async def retrieve_people_tags(app: web.Application, current_user_id: Integer):
+async def retrieve_people_tags(app: web.Application, current_user_id: Integer) -> list:
     """Retrieve and return a list of people tags added by the current user."""
     people_tag_names = []
     db = app['db']
@@ -48,7 +48,7 @@ async def retrieve_people_tags(app: web.Application, current_user_id: Integer):
                 person_info = conn.execute(person_query)
                 for p in person_info:
                     print(f"PERSON INFO: {p}")
-                    new_person = p.first_name + ' ' + p.last_name
+                    new_person = (p.id, p.first_name)
                     people_tag_names.append(new_person)
     except exc.SQLAlchemyError as err:
         print(f"RETRIEVE PEOPLE TAGS ERROR: {err}")
@@ -65,16 +65,21 @@ async def image_to_db(app: web.Application, user_id: Integer, album_id: Integer,
     try:
         formatted_date = datetime.datetime.strptime(image_date, '%Y-%m-%d')
         with db.connect() as conn:
-            await conn.execute(images.insert().values(user_id=user_id, album_key=album_id,
-                                                      person_key=child_id, filename=filename,
+            img_insert_stmt = (images.insert().values(user_id=user_id, album_key=album_id, filename=filename,
                                                       web_size_filename=web_filename,
-                                                      thumbnail_filename=thumbnail_filename,
-                                                      date_taken=formatted_date))
+                                                      thumbnail_filename=thumbnail_filename, date_taken=formatted_date)
+                               .returning(images.c.id))
+            return_stmt = conn.execute(img_insert_stmt)
+            new_img_id = return_stmt.fetchone()[0]
+            if child_id:
+                tag_insert_stmt = (people_to_image_relationships.insert().values(image_id=new_img_id,
+                                                                                 person_id=child_id))
+                conn.execute(tag_insert_stmt)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGE TO DB: {err}")
 
 
-async def retrieve_images(app: web.Application, current_user_id: Integer):
+async def retrieve_images(app: web.Application, current_user_id: Integer) -> list:
     """Retrieve images for specified IDs."""
     db = app['db']
     db.dispose()
@@ -106,7 +111,7 @@ async def retrieve_images(app: web.Application, current_user_id: Integer):
     return photo_data
 
 
-def parse_image_data(db_row):
+def parse_image_data(db_row) -> list:
     """Parse the image data from the database and add to data object to return to clientside as json."""
     parsed_data = []
     NoneType = type(None)
@@ -117,7 +122,7 @@ def parse_image_data(db_row):
         'photo_id': db_row[0],
         'user_id': db_row[1],
         'album_id': db_row[2],
-        'child_id': db_row[3],
+        'child_id': [],
         'filename': db_row[4],
         'web_size_filename': db_row[5],
         'thumbnail_filename': db_row[6],
@@ -131,9 +136,30 @@ def parse_image_data(db_row):
     return parsed_data
 
 
-def order_images(parsed_image_array):
+def order_images(parsed_image_array) -> None:
     """Sort image array so most recent appears first."""
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
+
+
+async def insert_person_tag(app: web.Application, image_data) -> list:
+    """Insert linked person ids to image data for use by frontend."""
+    db = app['db']
+    db.dispose()
+
+    for img in image_data:
+        with db.connect() as conn:
+            query_stmt = (people_to_image_relationships.select()
+                          .where(people_to_image_relationships.c.image_id == img['photo_id']))
+            result = conn.execute(query_stmt)
+            result = result.fetchall()
+            if result:
+                for r in result:
+                    person_tag_id = r[1]
+                    img['child_id'].append(person_tag_id)
+            else:
+                continue
+
+    return image_data
 
 
 def fix_image_orientation(im):
@@ -174,7 +200,7 @@ def fix_image_orientation(im):
         return functools.reduce(type(im).transpose, seq, im)
 
 
-def generate_invite_code():
+def generate_invite_code() -> str:
     """Generate a 5-character invite code."""
     valid_letters = string.ascii_uppercase
     generated_code = ''.join(random.choice(valid_letters) for i in range(5))
@@ -239,6 +265,7 @@ async def index_handler(request: web.Request) -> web.json_response:
 
     available_photos = await retrieve_images(request.app, user_id)
     order_images(available_photos)
+    available_photos = await insert_person_tag(request.app, available_photos)
     people_tags = await retrieve_people_tags(request.app, user_id)
     data['photos'] = available_photos
     data['tags'] = people_tags
@@ -373,7 +400,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/edit")
 @require_login
-async def edit_handler(request: web.Request) -> web.json_response():
+async def edit_handler(request: web.Request) -> web.json_response:
     data = {"edit_successful": False, "warnings": [], "error": None}
     session = await get_session(request)
     current_user = session.get("user_id")
@@ -414,7 +441,7 @@ async def edit_handler(request: web.Request) -> web.json_response():
 
 @router.post("/add-person")
 @require_login
-async def add_person_handler(request: web.Request) -> web.json_response():
+async def add_person_handler(request: web.Request) -> web.json_response:
     data = {"person_added": False, "error": None}
     session = await get_session(request)
     current_user = session.get("user_id")
@@ -434,9 +461,7 @@ async def add_person_handler(request: web.Request) -> web.json_response():
                                 .values(first_name=new_first_name, last_name=new_last_name)
                                 .returning(people.c.id))
             rtrn_stmt = conn.execute(prsn_insert_stmt)
-            print(f"INSERT STATEMENT: {prsn_insert_stmt}")
             person_id = rtrn_stmt.fetchone()[0]
-            print(f"PERSON_ID: {person_id}")
             prsn_to_prsn = insert(people_to_user_relationships).values(person_id=person_id, linked_to=current_user)
             conn.execute(prsn_to_prsn)
 
@@ -451,7 +476,7 @@ async def add_person_handler(request: web.Request) -> web.json_response():
 
 @router.post("/invite")
 @require_login
-async def invite_handler(request: web.Request) -> web.json_response():
+async def invite_handler(request: web.Request) -> web.json_response:
     data = {"invite_sent": False, "invite_code": None, "error": None}
     session = await get_session(request)
     current_user = session.get("user_id")

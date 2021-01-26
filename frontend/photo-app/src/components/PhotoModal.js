@@ -14,6 +14,8 @@ class PhotoModal extends PureComponent {
       date: this.props.photoDate,
       photoTitle: this.props.photoTitle,
       photoDesc: this.props.photoDesc,
+      selectedTags: this.props.selectedTags,
+      newPersonTags: [],
       error: ""
     };
 
@@ -89,7 +91,9 @@ class PhotoModal extends PureComponent {
         editToggled: false,
         displayDate: newPhotoDate,
         date: newPhotoDate,
-        photoDesc: newPhotoDesc
+        photoDesc: newPhotoDesc,
+        selectedTags: [],
+        newPersonTags: []
       });
     } else {
       this.setState({
@@ -98,6 +102,8 @@ class PhotoModal extends PureComponent {
         date: this.props.photoDate,
         photoTitle: this.props.photoTitle,
         photoDesc: this.props.photoDesc,
+        selectedTags: this.props.selectedTags,
+        newPersonTags: [],
         error: "Invalid date entered"
       });
     }
@@ -125,6 +131,8 @@ class PhotoModal extends PureComponent {
       date: "",
       photoTitle: "",
       photoDesc: "",
+      selectedTags: [],
+      newPersonTags: [],
       error: ""
     });
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -132,9 +140,16 @@ class PhotoModal extends PureComponent {
 
   handleChange(e) {
     const formValues = e.target.value;
-    this.setState({
-      [e.target.name]: formValues
-    });
+    if (e.target.name == "newPersonTags") {
+      this.setState(prevState => ({
+        newPersonTags: [...prevState.newPersonTags, formValues]
+      }));
+    } else {
+      this.setState({
+        [e.target.name]: formValues
+      });
+    }
+    console.log(this.state);
   }
 
   handleCancel() {
@@ -143,7 +158,9 @@ class PhotoModal extends PureComponent {
       displayDate: this.props.photoDate,
       date: this.props.photoDate,
       photoTitle: this.props.photoTitle,
-      photoDesc: this.props.photoDesc
+      photoDesc: this.props.photoDesc,
+      selectedTags: this.props.selectedTags,
+      newPersonTags: []
     });
   }
 
@@ -157,9 +174,10 @@ class PhotoModal extends PureComponent {
     let availableTagArray = [];
     for (let x = 0; x < tagsArray.length; x++) {
       availableTagArray.push(
-        <option key={x + '-tag'}>
-          {tagsArray[x]}
-        </option>
+        <div className="form-check form-check-inline">
+          <input className="form-check-input" type="checkbox" id={'inlineCheckbox' + x} value={tagsArray[x][1]} key={tagsArray[x][0] + '-input-key'} name="newPersonTags" onChange={this.handleChange} />
+          <label className="form-check-label" htmlFor={'inlineCheckbox' + x} key={tagsArray[x][0] + '-label-key'}>{tagsArray[x][1]}</label>
+        </div>
       )
     }
     return availableTagArray;
@@ -185,9 +203,10 @@ class PhotoModal extends PureComponent {
     const dateEditForm = <div className="d-flex mt-4 justify-content-between">
       <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
         <div className="form-group mx-3">
-          <select multiple className="form-control" id="person-tag-select">
+          {availablePeopleTags}
+{/*           <select multiple className="form-control" id="person-tag-select" name="newPersonTags" onChange={this.handleChange}>
             {availablePeopleTags}
-          </select>
+          </select> */}
         </div>
         <div className="form-group mx-3">
           {/* <label htmlFor="photoDesc">Photo description:</label> */}

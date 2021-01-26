@@ -20,6 +20,7 @@ class Home extends PureComponent {
       fullSizeDate: "",
       photoTitle: "",
       photoDesc: "",
+      selectedTags: null,
       showSettingsModal: false
     };
 
@@ -122,6 +123,7 @@ class Home extends PureComponent {
     this.setState({
       showPhotoModal: true,
       photoId: photoData.photo_id,
+      selectedTags: photoData.child_id,
       photoFilename: photoData.filename,
       photoTitle: photoData.title,
       photoDesc: photoData.description,
@@ -136,7 +138,10 @@ class Home extends PureComponent {
     this.setState({
       showPhotoModal: false,
       photoId: "",
+      selectedTags: null,
       photoFilename: "",
+      photoTitle: "",
+      photoDesc: "",
       fullSizeLoc: "",
       fullSizeDate: ""
     });
@@ -268,6 +273,7 @@ class Home extends PureComponent {
           onClose={this.handlePhotoModalClose}
           handlePhotoDateChange={this.props.handlePhotoDateChange}
           peopleTags={this.props.peopleTags}
+          selectedTags={this.state.selectedTags}
         />
         {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
         </div>
