@@ -20,7 +20,7 @@ class Home extends PureComponent {
       fullSizeDate: "",
       photoTitle: "",
       photoDesc: "",
-      selectedTags: null,
+      selectedTags: [],
       showSettingsModal: false
     };
 
@@ -138,7 +138,7 @@ class Home extends PureComponent {
     this.setState({
       showPhotoModal: false,
       photoId: "",
-      selectedTags: null,
+      selectedTags: [],
       photoFilename: "",
       photoTitle: "",
       photoDesc: "",

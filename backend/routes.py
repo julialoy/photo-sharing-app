@@ -410,17 +410,32 @@ async def edit_handler(request: web.Request) -> web.json_response:
     print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
     photo_id = edited_data['photo']['id']
     filename = edited_data['photo']['filename']
+
     if "T" in edited_data['photo']['oldDate']:
         orig_date = edited_data['photo']['oldDate'].split("T")[0]
     else:
         orig_date = edited_data['photo']['oldDate']
+
     new_date = edited_data['photo']['newDate']
+    orig_desc = edited_data['photo']['oldPhotoDesc']
     new_desc = edited_data['photo']['newPhotoDesc']
+    orig_tags = edited_data['photo']['oldTags']
+    new_tags = edited_data['photo']['newTags']
     print(f"EDIT ROUTE: orig_date: {orig_date}, new_date: {new_date}")
 
     if orig_date == new_date:
+        data['warnings'].append("New date matched original")
+
+    if orig_desc == new_desc:
+        data['warnings'].append("New description matched original")
+
+    if orig_tags == new_tags:
+        data['warnings'].append("New tags matched original")
+
+    if orig_date == new_date and orig_desc == new_desc and orig_tags == new_tags:
         data['edit_successful'] = True
-        data['warnings'] = "New date matched original"
+        data['warnings'] = "No new changes were submitted!"
+        return web.json_response(data)
 
     try:
         with db.connect() as conn:
@@ -430,6 +445,20 @@ async def edit_handler(request: web.Request) -> web.json_response:
                                       images.c.id == photo_id)).
                            values(date_taken=new_date, description=new_desc))
             conn.execute(date_update)
+
+            # Add any new person tags
+            for tag in new_tags:
+                if tag not in orig_tags:
+                    tag_insert = (people_to_image_relationships.insert().values(image_id=photo_id, person_id=tag))
+                    conn.execute(tag_insert)
+
+            # Delete any person tags the user no longer wants associated with image
+            for old_tag in orig_tags:
+                if old_tag not in new_tags:
+                    tag_delete = (people_to_image_relationships.delete()
+                                  .where(and_(people_to_image_relationships.c.image_id == photo_id,
+                                              people_to_image_relationships.c.image_id == old_tag)))
+                    conn.execute(tag_delete)
             data['edit_successful'] = True
     except exc.SQLAlchemyError as err:
         print(f"{err}")

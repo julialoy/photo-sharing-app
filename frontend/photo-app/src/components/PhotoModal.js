@@ -20,6 +20,7 @@ class PhotoModal extends PureComponent {
     };
 
     this.toggleEditForm = this.toggleEditForm.bind(this);
+    this.getPersonIds = this.getPersonIds.bind(this);
     this.saveNewData = this.saveNewData.bind(this);
     this.closeEditForm = this.closeEditForm.bind(this);
     this.handleModalClose = this.handleModalClose.bind(this);
@@ -42,11 +43,26 @@ class PhotoModal extends PureComponent {
     });
   }
 
+  getPersonIds(nameArray) {
+    let completeTagArray = [];
+    console.log("PEOPLE TAGS: ", this.props.peopleTags);
+    console.log(this.props.peopleTags.filter((t) => t[1] == "Madde"));
+    for (let x = 0; x < nameArray.length; x++) {
+      let fullTag = this.props.peopleTags.filter((t) => t[1] == nameArray[x]);
+      console.log("FULL TAG: ", fullTag);
+      let tagTuple = (fullTag[0], fullTag[1]);
+      console.log("TAG TUPLE: ", tagTuple);
+      completeTagArray.push(tagTuple);
+    }
+    return completeTagArray;
+  }
+
   saveNewData(evt) {
     evt.preventDefault();
     let validSave = true
     let newPhotoDate;
     const newPhotoDesc = this.state.photoDesc;
+    let newTags = this.getPersonIds(this.state.newPersonTags);
     
     if (this.state.date) {
       newPhotoDate = this.state.date;
@@ -54,10 +70,15 @@ class PhotoModal extends PureComponent {
       newPhotoDate = this.props.photoDate;
     }
 
+    if (!newTags) {
+      newTags = this.getPersonIds(this.state.selectedTags);
+    }
+
     if (!moment(newPhotoDate).isValid()) {
       validSave = false
     }
 
+    console.log("SEND TAGS: ", newTags);
     if (validSave) {
       axios.post("http://localhost:8080/edit",
       {
@@ -67,7 +88,9 @@ class PhotoModal extends PureComponent {
           oldDate: this.props.photoDate,
           newDate: newPhotoDate,
           oldPhotoDesc: this.props.photoDesc,
-          newPhotoDesc: newPhotoDesc
+          newPhotoDesc: newPhotoDesc,
+          oldTags: this.getPersonIds(this.state.selectedTags),
+          newTags: newTags
         }
       },
       {withCredentials: true}
@@ -76,7 +99,8 @@ class PhotoModal extends PureComponent {
         if (response.data.edit_successful) {
           this.setState({
             displayDate: newPhotoDate,
-            photoDesc: newPhotoDesc
+            photoDesc: newPhotoDesc,
+            selectedTags: newTags
           });
         }
         else {
@@ -141,9 +165,16 @@ class PhotoModal extends PureComponent {
   handleChange(e) {
     const formValues = e.target.value;
     if (e.target.name == "newPersonTags") {
-      this.setState(prevState => ({
-        newPersonTags: [...prevState.newPersonTags, formValues]
-      }));
+      if (e.target.checked) {
+        this.setState(prevState => ({
+          newPersonTags: [...prevState.newPersonTags, formValues]
+        }));
+      } else if (!e.target.checked) {
+        let newTagArray = this.state.newPersonTags.filter((t) => t !== formValues);
+        this.setState({
+          newPersonTags: [...newTagArray]
+        });
+      }
     } else {
       this.setState({
         [e.target.name]: formValues
@@ -173,10 +204,30 @@ class PhotoModal extends PureComponent {
   createPeopleTagList(tagsArray) {
     let availableTagArray = [];
     for (let x = 0; x < tagsArray.length; x++) {
+      let checkstatus;
+      if (this.state.selectedTags.includes(tagsArray[x][0])) {
+        checkstatus = 'checked';
+      } else {
+        checkstatus = null;
+      }
       availableTagArray.push(
         <div className="form-check form-check-inline">
-          <input className="form-check-input" type="checkbox" id={'inlineCheckbox' + x} value={tagsArray[x][1]} key={tagsArray[x][0] + '-input-key'} name="newPersonTags" onChange={this.handleChange} />
-          <label className="form-check-label" htmlFor={'inlineCheckbox' + x} key={tagsArray[x][0] + '-label-key'}>{tagsArray[x][1]}</label>
+          <input 
+            className="form-check-input" 
+            type="checkbox" 
+            id={'inlineCheckbox' + x} 
+            value={tagsArray[x][1]} 
+            key={tagsArray[x][0] + '-input-key'} 
+            name="newPersonTags" 
+            onChange={this.handleChange}
+            checkstatus={checkstatus}
+          />
+          <label 
+            className="form-check-label" 
+            htmlFor={'inlineCheckbox' + x} 
+            key={tagsArray[x][0] + '-label-key'}>
+              {tagsArray[x][1]}
+          </label>
         </div>
       )
     }
