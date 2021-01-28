@@ -62,7 +62,7 @@ class PhotoModal extends PureComponent {
     let validSave = true
     let newPhotoDate;
     const newPhotoDesc = this.state.photoDesc;
-    let newTags = this.getPersonIds(this.state.newPersonTags);
+    let newTags = this.state.newPersonTags;
     
     if (this.state.date) {
       newPhotoDate = this.state.date;
@@ -71,7 +71,7 @@ class PhotoModal extends PureComponent {
     }
 
     if (!newTags) {
-      newTags = this.getPersonIds(this.state.selectedTags);
+      newTags = this.state.selectedTags;
     }
 
     if (!moment(newPhotoDate).isValid()) {
@@ -89,7 +89,7 @@ class PhotoModal extends PureComponent {
           newDate: newPhotoDate,
           oldPhotoDesc: this.props.photoDesc,
           newPhotoDesc: newPhotoDesc,
-          oldTags: this.getPersonIds(this.state.selectedTags),
+          oldTags: this.state.selectedTags,
           newTags: newTags
         }
       },
@@ -165,6 +165,8 @@ class PhotoModal extends PureComponent {
   handleChange(e) {
     const formValues = e.target.value;
     if (e.target.name == "newPersonTags") {
+      console.log("TAG VALUE: ", e.target.value);
+      console.log("TAG CHECKED? ", e.target.checkstatus);
       if (e.target.checked) {
         this.setState(prevState => ({
           newPersonTags: [...prevState.newPersonTags, formValues]
@@ -210,13 +212,15 @@ class PhotoModal extends PureComponent {
       } else {
         checkstatus = null;
       }
+      let tagValue = `${tagsArray[x][0]}, ${tagsArray[x][1]}`;
+      console.log("TAG VALUE: ", tagValue);
       availableTagArray.push(
         <div className="form-check form-check-inline">
           <input 
             className="form-check-input" 
             type="checkbox" 
             id={'inlineCheckbox' + x} 
-            value={tagsArray[x][1]} 
+            value={tagValue} 
             key={tagsArray[x][0] + '-input-key'} 
             name="newPersonTags" 
             onChange={this.handleChange}
