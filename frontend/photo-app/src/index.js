@@ -1,13 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { library } from '@fortawesome/fontawesome-svg-core';
-import { faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faEdit, faTag } from '@fortawesome/free-solid-svg-icons';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 import App from './components/App';
 import * as serviceWorker from './serviceWorker';
 
-library.add(faEdit);
+library.add(faEdit, faTag);
 
 ReactDOM.render(
   <React.StrictMode>

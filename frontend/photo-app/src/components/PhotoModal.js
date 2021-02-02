@@ -268,9 +268,14 @@ class PhotoModal extends PureComponent {
     const {show, photoName, fullPhoto, photoDate} = this.props;
     const availablePeopleTags = this.createPeopleTagList(this.props.peopleTags);
     const mediaType = photoName.split('.')[1];
+    // const personTagElem = <div>
+    //   <FontAwesomeIcon className="mr-2" icon="tag" />
+    //   {this.state.selectedTags ? this.state.selectedTags.map(tag => <span className="mr-2">{tag.person_first_name}</span>) : this.props.selectedTags.map(tag => <span className="mr-2">{tag.person_first_name}</span>)}
+    // </div>
 /*     const monthSelectArray = Array.from(Array(12).keys()).map(month => <option>{month+1}</option>);
     const daySelectArray = Array.from(Array(31).keys()).map(day => <option>{day+1}</option>); */
     const photoDateDiv = <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
+      {/* {this.props.selectedTags.length > 0 ? personTagElem : null} */}
       <span>
         {this.state.photoDesc ? this.state.photoDesc : this.props.photoDesc}
       </span>
@@ -344,9 +349,11 @@ class PhotoModal extends PureComponent {
             </button>
           </div>
           <div className="modal-body">
-            <div className="text-center" id="media-element">
+            <div className="text-center mb-2" id="media-element">
               {mediaType === "mp4" ? videoElement : imgElement}
             </div>
+            {this.state.error ? errorMessage : null}
+            {this.state.successMsg ? successMessage : null}
             {this.state.editToggled ? dateEditForm : photoDateDiv}
 {/*             <div className="d-flex mt-4 justify-content-between" id="photo-modal-caption">
               <span>
@@ -358,8 +365,8 @@ class PhotoModal extends PureComponent {
             </div> */}
           </div>
           <div className="modal-footer">
-              {this.state.error ? errorMessage : null}
-              {this.state.successMsg ? successMessage : null}
+              {/* {this.state.error ? errorMessage : null}
+              {this.state.successMsg ? successMessage : null} */}
               {/* {this.state.editToggled ? dateEditForm : photoDateDiv} */}
           </div>
         </div>
