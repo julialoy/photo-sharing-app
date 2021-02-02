@@ -34,7 +34,7 @@ def require_login(func: _WebHandler) -> _WebHandler:
 
 async def retrieve_people_tags(app: web.Application, current_user_id: Integer) -> list:
     """Retrieve and return a list of people tags added by the current user."""
-    people_tag_names = []
+    people_tag_list = []
     db = app['db']
     db.dispose()
 
@@ -47,13 +47,13 @@ async def retrieve_people_tags(app: web.Application, current_user_id: Integer) -
                 person_query = (people.select().where(people.c.id == person.person_id))
                 person_info = conn.execute(person_query)
                 for p in person_info:
-                    print(f"PERSON INFO: {p}")
-                    new_person = (p.id, p.first_name)
-                    people_tag_names.append(new_person)
+                    # print(f"PERSON INFO: {p}")
+                    new_person = {'person_id': p.id, 'person_first_name': p.first_name, 'person_last_name': p.last_name}
+                    people_tag_list.append(new_person)
     except exc.SQLAlchemyError as err:
         print(f"RETRIEVE PEOPLE TAGS ERROR: {err}")
 
-    return people_tag_names
+    return people_tag_list
 
 
 async def image_to_db(app: web.Application, user_id: Integer, album_id: Integer,
@@ -101,7 +101,7 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
             for single_id in id_list:
                 results = conn.execute(images.select().where(images.c.user_id == single_id))
                 for res in results:
-                    print(f"RESULT: {res}")
+                    # print(f"RESULT: {res}")
                     # p = parse_image_data(res)[0]
                     p = parse_image_data(app, res)[0]
                     print(f"P!: {p}")
@@ -109,7 +109,7 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
 
-    print(f"PHOTO DATA: {photo_data}")
+    # print(f"PHOTO DATA: {photo_data}")
     return photo_data
 
 
@@ -132,20 +132,20 @@ def parse_image_data(app: web.Application, db_row) -> list:
         query_results = returned_query.fetchall()
 
         for result in query_results:
-            person_id = result[0]
+            # print(f"RESULT: {result}")
+            person_id = result[1]
             people_qry_stmt = (people.select().where(people.c.id == person_id))
             returned_qry = conn.execute(people_qry_stmt)
             qry_results = returned_qry.fetchall()
-            print(f"QUERY RESULTS FOR {result[0]}: {qry_results}. "
-                  f"Is result NoneType? {qry_results is NoneType} "
-                  f"Is qry results in child_ids ({child_ids})? {qry_results in child_ids}")
+            # print(f"QUERY RESULTS FOR {result[0]}:")
             if qry_results is not None:
                 for r in qry_results:
+                    # print(f"R {r}")
                     if r not in child_ids:
                         id_data = {'person_id': r[0],
                                    'person_first_name': r[1],
                                    'person_last_name': r[2]}
-                        print(f"APPEND RESULTS!")
+                        # print(f"APPEND RESULTS!")
                         child_ids.append(id_data)
         # for result in query_results:
         #     print(f"{result} in {child_ids}? {result[1] in child_ids}")

@@ -66,7 +66,7 @@ class App extends PureComponent {
       if (data.data.tags) {
         if (data.data.tags.length > 0) {
           this.setState( () => ({
-            peopleTags: data.data.tags
+            peopleTags: [...data.data.tags]
           }));
         }
       }

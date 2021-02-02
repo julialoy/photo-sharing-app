@@ -119,11 +119,11 @@ class Home extends PureComponent {
 
   showPhotoModal(photoData) {
     const photoDateStrip = photoData.date_taken.split('T')[0];
-    
+    console.log("SHOW PHOTO MODAL SELECTED TAGS: ", photoData.child_id);
     this.setState({
       showPhotoModal: true,
       photoId: photoData.photo_id,
-      selectedTags: photoData.child_id,
+      selectedTags: [...photoData.child_id],
       photoFilename: photoData.filename,
       photoTitle: photoData.title,
       photoDesc: photoData.description,

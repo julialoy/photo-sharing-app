@@ -47,11 +47,10 @@ class PhotoModal extends PureComponent {
   getPersonIds(nameArray) {
     let completeTagArray = [];
     console.log("PEOPLE TAGS: ", this.props.peopleTags);
-    console.log(this.props.peopleTags.filter((t) => t[1] == "Madde"));
     for (let x = 0; x < nameArray.length; x++) {
-      let fullTag = this.props.peopleTags.filter((t) => t[1] == nameArray[x]);
-      let tagTuple = (fullTag[0], fullTag[1]);
-      completeTagArray.push(tagTuple);
+      let fullTag = this.props.peopleTags.filter((t) => t.person_first_name === nameArray[x]);
+      // let tagTuple = (fullTag[0], fullTag[1]);
+      completeTagArray.push(fullTag);
     }
     return completeTagArray;
   }
@@ -99,7 +98,7 @@ class PhotoModal extends PureComponent {
           this.setState({
             displayDate: newPhotoDate,
             photoDesc: newPhotoDesc,
-            selectedTags: newTags,
+            selectedTags: [...newTags],
             successMsg: "Success! New data saved."
           });
         }
@@ -116,7 +115,7 @@ class PhotoModal extends PureComponent {
         displayDate: newPhotoDate,
         date: newPhotoDate,
         photoDesc: newPhotoDesc,
-        selectedTags: [],
+        selectedTags: [...newTags],
         newPersonTags: []
       });
     } else {
@@ -126,7 +125,7 @@ class PhotoModal extends PureComponent {
         date: this.props.photoDate,
         photoTitle: this.props.photoTitle,
         photoDesc: this.props.photoDesc,
-        selectedTags: this.props.selectedTags,
+        selectedTags: [...this.props.selectedTags],
         newPersonTags: [],
         error: "Invalid date entered"
       });
@@ -165,7 +164,7 @@ class PhotoModal extends PureComponent {
 
   handleChange(e) {
     const formValues = e.target.value;
-    if (e.target.name == "newPersonTags") {
+    if (e.target.name === "newPersonTags") {
       if (e.target.checked) {
         this.setState(prevState => ({
           newPersonTags: [...prevState.newPersonTags, formValues]
@@ -206,35 +205,61 @@ class PhotoModal extends PureComponent {
   }
 
   createPeopleTagList(tagsArray) {
+    let selectedTagIds = [];
+    for (let t = 0; t < this.props.selectedTags.length; t++) {
+      selectedTagIds.push(this.props.selectedTags[t].person_id);
+    }
+    console.log("SELECTED TAG IDS: ", selectedTagIds);
     let availableTagArray = [];
     for (let x = 0; x < tagsArray.length; x++) {
-      let checkstatus;
-      if (this.state.selectedTags.includes(tagsArray[x][0])) {
-        checkstatus = 'checked';
+      let checkStatus;
+      if (selectedTagIds.includes(tagsArray[x].person_id)) {
+        checkStatus = 'checked';
       } else {
-        checkstatus = null;
+        checkStatus = null;
       }
-      let tagValue = `${tagsArray[x][0]}, ${tagsArray[x][1]}`;
-      availableTagArray.push(
-        <div className="form-check form-check-inline">
+      console.log("CHECK STATUS: ", tagsArray, checkStatus);
+      let tagValue = `${tagsArray[x].person_id}, ${tagsArray[x].person_first_name}`;
+      let newInputElement;
+      if (!checkStatus) {
+        newInputElement = <div className="form-check form-check-inline">
           <input 
             className="form-check-input" 
             type="checkbox" 
-            id={'inlineCheckbox' + x} 
+            id={'inlineCheckboxPhotoModal'} 
             value={tagValue} 
-            key={tagsArray[x][0] + '-input-key'} 
+            key={tagsArray[x].person_id + '-input-key'} 
             name="newPersonTags" 
             onChange={this.handleChange}
-            checkstatus={checkstatus}
           />
           <label 
             className="form-check-label" 
             htmlFor={'inlineCheckbox' + x} 
-            key={tagsArray[x][0] + '-label-key'}>
-              {tagsArray[x][1]}
+            key={tagsArray[x].person_id + '-label-key'}>
+              {tagsArray[x].person_first_name}
           </label>
-        </div>
-      )
+        </div>;
+      } else {
+        newInputElement = <div className="form-check form-check-inline">
+          <input 
+            className="form-check-input" 
+            type="checkbox" 
+            id={'inlineCheckboxPhotoModal'} 
+            value={tagValue} 
+            key={tagsArray[x].person_id + '-input-key'} 
+            name="newPersonTags" 
+            onChange={this.handleChange}
+            checked
+          />
+          <label 
+            className="form-check-label" 
+            htmlFor={'inlineCheckbox' + x} 
+            key={tagsArray[x].person_id + '-label-key'}>
+              {tagsArray[x].person_first_name}
+          </label>
+        </div>;
+      }
+      availableTagArray.push(newInputElement);
     }
     return availableTagArray;
   }
@@ -309,7 +334,6 @@ class PhotoModal extends PureComponent {
       return null;
     }
     
-    console.log("Selected tags :", this.state.selectedTags);
     return (
        <div className="modal-backdrop">
         <div className="modal" display="block" id="photo-modal">
