@@ -16,6 +16,7 @@ class PhotoModal extends PureComponent {
       photoDesc: this.props.photoDesc,
       selectedTags: this.props.selectedTags,
       newPersonTags: [],
+      successMsg: "",
       error: ""
     };
 
@@ -49,9 +50,7 @@ class PhotoModal extends PureComponent {
     console.log(this.props.peopleTags.filter((t) => t[1] == "Madde"));
     for (let x = 0; x < nameArray.length; x++) {
       let fullTag = this.props.peopleTags.filter((t) => t[1] == nameArray[x]);
-      console.log("FULL TAG: ", fullTag);
       let tagTuple = (fullTag[0], fullTag[1]);
-      console.log("TAG TUPLE: ", tagTuple);
       completeTagArray.push(tagTuple);
     }
     return completeTagArray;
@@ -78,7 +77,6 @@ class PhotoModal extends PureComponent {
       validSave = false
     }
 
-    console.log("SEND TAGS: ", newTags);
     if (validSave) {
       axios.post("http://localhost:8080/edit",
       {
@@ -96,16 +94,18 @@ class PhotoModal extends PureComponent {
       {withCredentials: true}
       )
       .then(response => {
+        console.log("RESPONSE DATA: ", response)
         if (response.data.edit_successful) {
           this.setState({
             displayDate: newPhotoDate,
             photoDesc: newPhotoDesc,
-            selectedTags: newTags
+            selectedTags: newTags,
+            successMsg: "Success! New data saved."
           });
         }
         else {
           this.setState({
-            error: "Date not saved"
+            error: "New data not saved"
           });
         }
       })
@@ -157,6 +157,7 @@ class PhotoModal extends PureComponent {
       photoDesc: "",
       selectedTags: [],
       newPersonTags: [],
+      successMsg: "",
       error: ""
     });
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -165,8 +166,6 @@ class PhotoModal extends PureComponent {
   handleChange(e) {
     const formValues = e.target.value;
     if (e.target.name == "newPersonTags") {
-      console.log("TAG VALUE: ", e.target.value);
-      console.log("TAG CHECKED? ", e.target.checkstatus);
       if (e.target.checked) {
         this.setState(prevState => ({
           newPersonTags: [...prevState.newPersonTags, formValues]
@@ -193,12 +192,15 @@ class PhotoModal extends PureComponent {
       photoTitle: this.props.photoTitle,
       photoDesc: this.props.photoDesc,
       selectedTags: this.props.selectedTags,
-      newPersonTags: []
+      newPersonTags: [],
+      successMsg: "",
+      error: ""
     });
   }
 
   handleCloseError() {
     this.setState({
+      successMsg: "",
       error: ""
     });
   }
@@ -213,7 +215,6 @@ class PhotoModal extends PureComponent {
         checkstatus = null;
       }
       let tagValue = `${tagsArray[x][0]}, ${tagsArray[x][1]}`;
-      console.log("TAG VALUE: ", tagValue);
       availableTagArray.push(
         <div className="form-check form-check-inline">
           <input 
@@ -280,6 +281,13 @@ class PhotoModal extends PureComponent {
       </form>
     </div>
 
+    const successMessage = <div className="alert alert-success alert-dismissible fade show" role="alert">
+      <button type="button" className="close" data-dismiss="alert" aria-label="close" onClick={this.handleCloseError}>
+        <span aria-hidden="true">&times;</span>
+      </button>
+      {this.state.successMsg}
+    </div>
+
     const errorMessage = <div className="alert alert-danger alert-dismissible fade show row" role="alert">
       <button type="button" className="close" data-dismiss="alert" aria-label="close" onClick={this.handleCloseError}>
         <span aria-hidden="true">&times;</span>
@@ -300,7 +308,8 @@ class PhotoModal extends PureComponent {
     if (!show) {
       return null;
     }
-
+    
+    console.log("Selected tags :", this.state.selectedTags);
     return (
        <div className="modal-backdrop">
         <div className="modal" display="block" id="photo-modal">
@@ -326,6 +335,7 @@ class PhotoModal extends PureComponent {
           </div>
           <div className="modal-footer">
               {this.state.error ? errorMessage : null}
+              {this.state.successMsg ? successMessage : null}
               {/* {this.state.editToggled ? dateEditForm : photoDateDiv} */}
           </div>
         </div>

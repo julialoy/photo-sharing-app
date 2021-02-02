@@ -102,7 +102,9 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
                 results = conn.execute(images.select().where(images.c.user_id == single_id))
                 for res in results:
                     print(f"RESULT: {res}")
-                    p = parse_image_data(res)[0]
+                    # p = parse_image_data(res)[0]
+                    p = parse_image_data(app, res)[0]
+                    print(f"P!: {p}")
                     photo_data.append(p)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
@@ -111,18 +113,50 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
     return photo_data
 
 
-def parse_image_data(db_row) -> list:
+def parse_image_data(app: web.Application, db_row) -> list:
     """Parse the image data from the database and add to data object to return to clientside as json."""
+    db = app['db']
+    db.dispose()
     parsed_data = []
     NoneType = type(None)
+    photo_id = db_row[0]
     full_size_loc = '../static/images/' + db_row[4] if len(db_row[4]) >= 1 else ''
     web_size_loc = '../static/images/' + db_row[5] if type(db_row[5]) is not NoneType else full_size_loc
     thumb_size_loc = '../static/images/' + db_row[6] if type(db_row[6]) is not NoneType else full_size_loc
+    child_ids = []
+
+    with db.connect() as conn:
+        query_stmt = (people_to_image_relationships.select()
+                      .where(people_to_image_relationships.c.image_id == photo_id))
+        returned_query = conn.execute(query_stmt)
+        query_results = returned_query.fetchall()
+
+        for result in query_results:
+            person_id = result[0]
+            people_qry_stmt = (people.select().where(people.c.id == person_id))
+            returned_qry = conn.execute(people_qry_stmt)
+            qry_results = returned_qry.fetchall()
+            print(f"QUERY RESULTS FOR {result[0]}: {qry_results}. "
+                  f"Is result NoneType? {qry_results is NoneType} "
+                  f"Is qry results in child_ids ({child_ids})? {qry_results in child_ids}")
+            if qry_results is not None:
+                for r in qry_results:
+                    if r not in child_ids:
+                        id_data = {'person_id': r[0],
+                                   'person_first_name': r[1],
+                                   'person_last_name': r[2]}
+                        print(f"APPEND RESULTS!")
+                        child_ids.append(id_data)
+        # for result in query_results:
+        #     print(f"{result} in {child_ids}? {result[1] in child_ids}")
+        #     if result not in child_ids:
+        #         child_ids.append(result)
+
     parsed_data.append({
-        'photo_id': db_row[0],
+        'photo_id': photo_id,
         'user_id': db_row[1],
         'album_id': db_row[2],
-        'child_id': [],
+        'child_id': child_ids,
         'filename': db_row[4],
         'web_size_filename': db_row[5],
         'thumbnail_filename': db_row[6],
@@ -141,25 +175,26 @@ def order_images(parsed_image_array) -> None:
     parsed_image_array.sort(key=lambda x: x['date_taken'], reverse=True)
 
 
-async def insert_person_tag(app: web.Application, image_data) -> list:
-    """Insert linked person ids to image data for use by frontend."""
-    db = app['db']
-    db.dispose()
-
-    for img in image_data:
-        with db.connect() as conn:
-            query_stmt = (people_to_image_relationships.select()
-                          .where(people_to_image_relationships.c.image_id == img['photo_id']))
-            result = conn.execute(query_stmt)
-            result = result.fetchall()
-            if result:
-                for r in result:
-                    person_tag_id = r[1]
-                    img['child_id'].append(person_tag_id)
-            else:
-                continue
-
-    return image_data
+# Not used?
+# async def insert_person_tag(app: web.Application, image_data) -> list:
+#     """Insert linked person ids to image data for use by frontend."""
+#     db = app['db']
+#     db.dispose()
+#
+#     for img in image_data:
+#         with db.connect() as conn:
+#             query_stmt = (people_to_image_relationships.select()
+#                           .where(people_to_image_relationships.c.image_id == img['photo_id']))
+#             result = conn.execute(query_stmt)
+#             result = result.fetchall()
+#             if result:
+#                 for r in result:
+#                     person_tag_id = r[1]
+#                     img['child_id'].append(person_tag_id)
+#             else:
+#                 continue
+#
+#     return image_data
 
 
 def fix_image_orientation(im):
@@ -265,7 +300,7 @@ async def index_handler(request: web.Request) -> web.json_response:
 
     available_photos = await retrieve_images(request.app, user_id)
     order_images(available_photos)
-    available_photos = await insert_person_tag(request.app, available_photos)
+    # available_photos = await insert_person_tag(request.app, available_photos)
     people_tags = await retrieve_people_tags(request.app, user_id)
     data['photos'] = available_photos
     data['tags'] = people_tags
@@ -410,6 +445,8 @@ async def edit_handler(request: web.Request) -> web.json_response:
     print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
     photo_id = edited_data['photo']['id']
     filename = edited_data['photo']['filename']
+    orig_tags = edited_data['photo']['oldTags']
+    new_tags = edited_data['photo']['newTags']
 
     if "T" in edited_data['photo']['oldDate']:
         orig_date = edited_data['photo']['oldDate'].split("T")[0]
@@ -419,9 +456,6 @@ async def edit_handler(request: web.Request) -> web.json_response:
     new_date = edited_data['photo']['newDate']
     orig_desc = edited_data['photo']['oldPhotoDesc']
     new_desc = edited_data['photo']['newPhotoDesc']
-    orig_tags = edited_data['photo']['oldTags']
-    new_tags = edited_data['photo']['newTags']
-    print(f"EDIT ROUTE: orig_date: {orig_date}, new_date: {new_date}")
 
     if orig_date == new_date:
         data['warnings'].append("New date matched original")
@@ -437,6 +471,18 @@ async def edit_handler(request: web.Request) -> web.json_response:
         data['warnings'] = "No new changes were submitted!"
         return web.json_response(data)
 
+    orig_tag_list = []
+    new_tag_list = []
+    if len(orig_tags) > 0:
+        for tag in orig_tags:
+            t = int(tag.split(',')[0])
+            orig_tag_list.append(t)
+
+    if len(new_tags) > 0:
+        for tag in new_tags:
+            t = int(tag.split(',')[0])
+            new_tag_list.append(t)
+
     try:
         with db.connect() as conn:
             date_update = (images.update().
@@ -447,24 +493,48 @@ async def edit_handler(request: web.Request) -> web.json_response:
             conn.execute(date_update)
 
             # Add any new person tags
-            for tag in new_tags:
-                if tag not in orig_tags:
-                    tag_insert = (people_to_image_relationships.insert().values(image_id=photo_id, person_id=tag))
-                    conn.execute(tag_insert)
+            for tag in new_tag_list:
+                if tag not in orig_tag_list:
+                    print(f"{tag} not in orig_tag_list")
+                    # Check database to make sure entry doesn't exist
+                    tag_insert_slct = (people_to_image_relationships
+                                       .select()
+                                       .where(and_(people_to_image_relationships.c.image_id == photo_id,
+                                                   people_to_image_relationships.c.person_id == tag)))
+                    return_insert_slct = conn.execute(tag_insert_slct)
+                    print(f"SELECT RUN")
+                    print(return_insert_slct)
+                    returned_tag = return_insert_slct.fetchone()
+                    print(f"RETURNED TAG: {returned_tag}")
+                    if not returned_tag:
+                        tag_insert = (people_to_image_relationships.insert().values(image_id=photo_id, person_id=tag))
+                        conn.execute(tag_insert)
 
             # Delete any person tags the user no longer wants associated with image
-            for old_tag in orig_tags:
-                if old_tag not in new_tags:
-                    tag_delete = (people_to_image_relationships.delete()
-                                  .where(and_(people_to_image_relationships.c.image_id == photo_id,
-                                              people_to_image_relationships.c.image_id == old_tag)))
-                    conn.execute(tag_delete)
+            for old_tag in orig_tag_list:
+                if old_tag not in new_tag_list:
+                    print(f"{old_tag} not in new_tag_list")
+                    # Check database to make sure entry doesn't exist
+                    tag_delete_slct = (people_to_image_relationships
+                                       .select()
+                                       .where(and_(people_to_image_relationships.c.image_id == photo_id,
+                                                   people_to_image_relationships.c.person_id == old_tag)))
+                    return_del_select = conn.execute(tag_delete_slct)
+                    tag_to_del = return_del_select.fetchone()
+                    print(f"TAG TO DELETE: {tag_to_del}")
+                    if tag_to_del:
+                        tag_delete_stmt = (people_to_image_relationships.delete()
+                                           .where(and_(people_to_image_relationships.c.image_id == photo_id,
+                                                       people_to_image_relationships.c.image_id == old_tag)))
+                        conn.execute(tag_delete_stmt)
             data['edit_successful'] = True
+            print(f"Completed database update {data}")
     except exc.SQLAlchemyError as err:
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
 
+    print(f"Returning data {data}")
     return web.json_response(data)
 
 
