@@ -94,7 +94,7 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
                                   .where(user_to_user_relationships.c.user_id == current_user_id))
         for r_user in related_users:
             id_list.append(r_user[1])
-    print(f"ID LIST: {id_list}")
+    # print(f"ID LIST: {id_list}")
 
     try:
         with db.connect() as conn:
@@ -104,7 +104,7 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
                     # print(f"RESULT: {res}")
                     # p = parse_image_data(res)[0]
                     p = parse_image_data(app, res)[0]
-                    print(f"P!: {p}")
+                    # print(f"P!: {p}")
                     photo_data.append(p)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
@@ -142,9 +142,10 @@ def parse_image_data(app: web.Application, db_row) -> list:
                 for r in qry_results:
                     # print(f"R {r}")
                     if r not in child_ids:
-                        id_data = {'person_id': r[0],
-                                   'person_first_name': r[1],
-                                   'person_last_name': r[2]}
+                        # id_data = {'person_id': r[0],
+                        #            'person_first_name': r[1],
+                        #            'person_last_name': r[2]}
+                        id_data = r[0]
                         # print(f"APPEND RESULTS!")
                         child_ids.append(id_data)
         # for result in query_results:
@@ -285,10 +286,10 @@ async def index_handler(request: web.Request) -> web.json_response:
     data = {"photos": None, "tags": None}
     session = await get_session(request)
     username = session.get("username")
-    print(f"USERNAME: {username}")
-    print(f"SESSION: {session}")
+    # print(f"USERNAME: {username}")
+    # print(f"SESSION: {session}")
     user_id = session.get("user_id")
-    print(f"USER ID: {user_id}")
+    # print(f"USER ID: {user_id}")
     db = request.app['db']
     db.dispose()
 
@@ -310,13 +311,13 @@ async def index_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/login")
 async def login_handler(request: web.Request) -> web.json_response:
-    print("FIND USER AND LOG IN")
+    # print("FIND USER AND LOG IN")
     session = await new_session(request)
     request_json = await json_handler(request)
-    print(f"TRY TO LOG IN DATA: {request_json}")
+    # print(f"TRY TO LOG IN DATA: {request_json}")
     username = request_json['user']['email']
     password = request_json['user']['password']
-    print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
+    # print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
     db = request.app['db']
     db.dispose()
@@ -327,7 +328,7 @@ async def login_handler(request: web.Request) -> web.json_response:
         selected_user_result = conn.execute(query_stmt)
         for row in selected_user_result:
             selected_user = row
-    print(f"SELECTED USER: {selected_user}")
+    # print(f"SELECTED USER: {selected_user}")
 
     if not selected_user:
         print(f"NO USER FOUND {selected_user}")
@@ -346,12 +347,12 @@ async def login_handler(request: web.Request) -> web.json_response:
         session["auth_token"] = auth_token
         session["access_level"] = selected_user[3]
         session["logged_in"] = True
-        print(f"LOGIN DATA: {data}")
+        # print(f"LOGIN DATA: {data}")
         with db.connect() as conn:
             update_stmt = users.update().where(users.c.username == username).values(auth_token=auth_token)
             conn.execute(update_stmt)
 
-    print("UPDATED")
+    # print("UPDATED")
     return web.json_response(data)
 
 
@@ -381,11 +382,11 @@ async def registration_handler(request: web.Request) -> web.json_response:
         select_stmt = users.select().where(users.c.username == user_email)
         new_user = conn.execute(select_stmt)
         for row in new_user:
-            print(f"ROW: {row}")
+            # print(f"ROW: {row}")
             data['user_id'] = row[0]
             data['username'] = row[1]
 
-    print(data)
+    # print(data)
     return web.json_response(data)
 
 
@@ -394,7 +395,7 @@ async def registration_handler(request: web.Request) -> web.json_response:
 async def logged_in_handler(request: web.Request) -> web.json_response:
     data = {"user_id": None, "username": None, "access_level": None, "is_logged_in": False}
     session = await get_session(request)
-    print(f"LOGGED IN? {session}")
+    # print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
     if valid_auth_token:
         data["is_logged_in"] = True
@@ -410,7 +411,7 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
 async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
-    print(f"LOG OUT {session}")
+    # print(f"LOG OUT {session}")
     db = request.app['db']
     db.dispose()
 
@@ -428,7 +429,7 @@ async def logout_handler(request: web.Request) -> web.json_response:
         print(f"ERROR: {err}")
         data = {"log_out_successful": False}
 
-    print(f"SESSION AFTER LOG OUT: {session}")
+    # print(f"SESSION AFTER LOG OUT: {session}")
     return web.json_response(data)
 
 
@@ -442,19 +443,19 @@ async def edit_handler(request: web.Request) -> web.json_response:
     edited_data = await json_handler(request)
     db = request.app['db']
     db.dispose()
-    print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
+    # print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
     photo_id = edited_data['photo']['id']
     filename = edited_data['photo']['filename']
-    orig_tags = edited_data['photo']['oldTags']
+    orig_tags = edited_data['photo']['currTags']
     new_tags = edited_data['photo']['newTags']
 
-    if "T" in edited_data['photo']['oldDate']:
-        orig_date = edited_data['photo']['oldDate'].split("T")[0]
+    if "T" in edited_data['photo']['currDate']:
+        orig_date = edited_data['photo']['currDate'].split("T")[0]
     else:
-        orig_date = edited_data['photo']['oldDate']
+        orig_date = edited_data['photo']['currDate']
 
     new_date = edited_data['photo']['newDate']
-    orig_desc = edited_data['photo']['oldPhotoDesc']
+    orig_desc = edited_data['photo']['currPhotoDesc']
     new_desc = edited_data['photo']['newPhotoDesc']
 
     if orig_date == new_date:
@@ -495,17 +496,17 @@ async def edit_handler(request: web.Request) -> web.json_response:
             # Add any new person tags
             for tag in new_tag_list:
                 if tag not in orig_tag_list:
-                    print(f"{tag} not in orig_tag_list")
+                    # print(f"{tag} not in orig_tag_list")
                     # Check database to make sure entry doesn't exist
                     tag_insert_slct = (people_to_image_relationships
                                        .select()
                                        .where(and_(people_to_image_relationships.c.image_id == photo_id,
                                                    people_to_image_relationships.c.person_id == tag)))
                     return_insert_slct = conn.execute(tag_insert_slct)
-                    print(f"SELECT RUN")
+                    # print(f"SELECT RUN")
                     print(return_insert_slct)
                     returned_tag = return_insert_slct.fetchone()
-                    print(f"RETURNED TAG: {returned_tag}")
+                    # print(f"RETURNED TAG: {returned_tag}")
                     if not returned_tag:
                         tag_insert = (people_to_image_relationships.insert().values(image_id=photo_id, person_id=tag))
                         conn.execute(tag_insert)
@@ -513,7 +514,7 @@ async def edit_handler(request: web.Request) -> web.json_response:
             # Delete any person tags the user no longer wants associated with image
             for old_tag in orig_tag_list:
                 if old_tag not in new_tag_list:
-                    print(f"{old_tag} not in new_tag_list")
+                    # print(f"{old_tag} not in new_tag_list")
                     # Check database to make sure entry doesn't exist
                     tag_delete_slct = (people_to_image_relationships
                                        .select()
@@ -521,20 +522,20 @@ async def edit_handler(request: web.Request) -> web.json_response:
                                                    people_to_image_relationships.c.person_id == old_tag)))
                     return_del_select = conn.execute(tag_delete_slct)
                     tag_to_del = return_del_select.fetchone()
-                    print(f"TAG TO DELETE: {tag_to_del}")
+                    # print(f"TAG TO DELETE: {tag_to_del}")
                     if tag_to_del:
                         tag_delete_stmt = (people_to_image_relationships.delete()
                                            .where(and_(people_to_image_relationships.c.image_id == photo_id,
                                                        people_to_image_relationships.c.image_id == old_tag)))
                         conn.execute(tag_delete_stmt)
             data['edit_successful'] = True
-            print(f"Completed database update {data}")
+            # print(f"Completed database update {data}")
     except exc.SQLAlchemyError as err:
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = f"{err}"
 
-    print(f"Returning data {data}")
+    # print(f"Returning data {data}")
     return web.json_response(data)
 
 
@@ -580,7 +581,7 @@ async def invite_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     current_user = session.get("user_id")
     req_data = await json_handler(request)
-    print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
+    # print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
     invite_email = req_data['invite']['email']
     invite_access_level = req_data['invite']['accessLevel']
     today = datetime.datetime.now(datetime.timezone.utc)
@@ -627,7 +628,7 @@ async def invite_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/register-invite")
 async def register_invite_handler(request: web.Request) -> web.json_response:
-    print(f"REGISTER THE INVITE")
+    # print(f"REGISTER THE INVITE")
     data = {"invite_redeemed": False, "error": None, "username": None, "user_id": None, "user_access_level": None}
     session = await new_session(request)
     invite_confirm_data = await json_handler(request)
@@ -638,7 +639,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
     invitee_key = None
     db = request.app['db']
     db.dispose()
-    print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
+    # print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
 
     try:
         with db.connect() as conn:
@@ -647,7 +648,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             selected_invites = conn.execute(select_stmt)
 
             for row in selected_invites:
-                print(f"INVITES ROW: {row}")
+                # print(f"INVITES ROW: {row}")
                 tdy = str(datetime.datetime.now(datetime.timezone.utc))
                 if row[3].isoformat() < tdy:
                     data['invite_redeemed'] = False
@@ -664,7 +665,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
         print(f"REDEEM INVITE ERROR: {err}")
 
     if data['invite_redeemed']:
-        print(f"INVITE REDEEMED")
+        # print(f"INVITE REDEEMED")
         temp_password_uuid4 = uuid4()
         temp_password = temp_password_uuid4.hex
         with db.connect() as conn:
@@ -675,7 +676,7 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             new_user = conn.execute(users.select()
                                     .where(and_(users.c.username == invitee_email,
                                                 users.c.password == temp_password)))
-            print(f"NEW USER: {new_user}")
+            # print(f"NEW USER: {new_user}")
             new_user_id = None
             for row in new_user:
                 new_user_id = row[0]
@@ -692,14 +693,14 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             data['username'] = invitee_email
             data['user_id'] = new_user_id
             data['user_access_level'] = invitee_access_level
-            print(f"{session}")
+            # print(f"{session}")
             update_auth_token = (users.update().where(users.c.username == invitee_email)
                                  .values(auth_token=auth_token))
             conn.execute(update_auth_token)
             delete_invite = (invites.delete().where(invites.c.invite_code == invitee_code))
             conn.execute(delete_invite)
 
-    print(f"INVITE DATA: {data}")
+    # print(f"INVITE DATA: {data}")
     return web.json_response(data)
 
 
@@ -739,7 +740,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
     db.dispose()
     counter = 0
     end_count = len(image_data)
-    print(f"IMAGE DATA: {image_data}")
+    # print(f"IMAGE DATA: {image_data}")
     while counter < end_count:
         key = 'image' + str(counter)
         filename = image_data[key].filename
@@ -748,7 +749,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
         if image_type == 'jpg':
             image_type = 'jpeg'
 
-        print(f"Handling file {counter} of {end_count}: {filename}")
+        # print(f"Handling file {counter} of {end_count}: {filename}")
         # See if file has already been saved
         try:
             with db.connect() as conn:
@@ -757,7 +758,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 selected_images = conn.execute(query_stmt)
                 file_exists = False
                 for i in selected_images:
-                    print(f"IMAGE: {i}")
+                    # print(f"IMAGE: {i}")
                     if i[4] == filename:
                         data['warnings'].append(f"Image {filename} already exists!")
                         counter += 1
@@ -796,7 +797,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                                             .values(date_taken=vid_creation_date))
                         conn.execute(update_date_stmt)
 
-                    print(f"creation_date for {filename}: {vid_creation_date}")
+                    # print(f"creation_date for {filename}: {vid_creation_date}")
                     data['upload_successful'] = True
 
                     counter += 1
@@ -843,7 +844,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                                                    thumbnail_filename=thumb_filename))
                         conn.execute(update_img_stmt)
 
-                    print(f"creation_date for {filename}: {creation_date}")
+                    # print(f"creation_date for {filename}: {creation_date}")
                     data['upload_successful'] = True
 
                     counter += 1

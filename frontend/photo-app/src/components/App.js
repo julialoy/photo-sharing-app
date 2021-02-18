@@ -31,7 +31,6 @@ class App extends PureComponent {
   }
 
   checkLoginStatus() {
-    console.log("CHECKING LOG IN STATUS");
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
       if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
@@ -79,7 +78,7 @@ class App extends PureComponent {
   }
 
   handleSuccessfulAuth(data) {
-    console.log("SUCCESSFUL AUTH DATA: ", data)
+    // console.log("SUCCESSFUL AUTH DATA: ", data)
     this.setState(() => ({
       current_user: {
         id: data.user_id,
@@ -102,7 +101,6 @@ class App extends PureComponent {
   }
   
   componentDidMount() {
-    console.log("COMPONENT DID MOUNT");
     this.checkLoginStatus();
   }
 
