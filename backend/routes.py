@@ -504,7 +504,6 @@ async def edit_handler(request: web.Request) -> web.json_response:
                                                    people_to_image_relationships.c.person_id == tag)))
                     return_insert_slct = conn.execute(tag_insert_slct)
                     # print(f"SELECT RUN")
-                    print(return_insert_slct)
                     returned_tag = return_insert_slct.fetchone()
                     # print(f"RETURNED TAG: {returned_tag}")
                     if not returned_tag:
@@ -514,7 +513,6 @@ async def edit_handler(request: web.Request) -> web.json_response:
             # Delete any person tags the user no longer wants associated with image
             for old_tag in orig_tag_list:
                 if old_tag not in new_tag_list:
-                    # print(f"{old_tag} not in new_tag_list")
                     # Check database to make sure entry doesn't exist
                     tag_delete_slct = (people_to_image_relationships
                                        .select()
@@ -522,12 +520,14 @@ async def edit_handler(request: web.Request) -> web.json_response:
                                                    people_to_image_relationships.c.person_id == old_tag)))
                     return_del_select = conn.execute(tag_delete_slct)
                     tag_to_del = return_del_select.fetchone()
-                    # print(f"TAG TO DELETE: {tag_to_del}")
                     if tag_to_del:
-                        tag_delete_stmt = (people_to_image_relationships.delete()
-                                           .where(and_(people_to_image_relationships.c.image_id == photo_id,
-                                                       people_to_image_relationships.c.image_id == old_tag)))
-                        conn.execute(tag_delete_stmt)
+                        try:
+                            tag_delete_stmt = (people_to_image_relationships.delete()
+                                               .where(and_(people_to_image_relationships.c.image_id == photo_id,
+                                                           people_to_image_relationships.c.person_id == old_tag)))
+                            conn.execute(tag_delete_stmt)
+                        except exc.SQLAlchemyError as err:
+                            print(f"Delete unsuccessful: {err}")
             data['edit_successful'] = True
             # print(f"Completed database update {data}")
     except exc.SQLAlchemyError as err:

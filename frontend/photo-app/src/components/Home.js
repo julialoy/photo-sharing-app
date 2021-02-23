@@ -231,6 +231,7 @@ class Home extends PureComponent {
     });
     // Remove 'modal-open' class on close so body will scroll
     document.body.classList.remove('modal-open');
+    this.handleRetrievePhotos();
   }
 
   handleCloseModalMsg() {
