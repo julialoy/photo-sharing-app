@@ -443,11 +443,11 @@ async def edit_handler(request: web.Request) -> web.json_response:
     edited_data = await json_handler(request)
     db = request.app['db']
     db.dispose()
-    # print(f"EDIT ROUTE: current_user: {current_user}, edited_data: {edited_data}")
+
     photo_id = edited_data['photo']['id']
     filename = edited_data['photo']['filename']
-    orig_tags = edited_data['photo']['currTags']
-    new_tags = edited_data['photo']['newTags']
+    orig_tag_list = edited_data['photo']['currTags']
+    new_tag_list = edited_data['photo']['newTags']
 
     if "T" in edited_data['photo']['currDate']:
         orig_date = edited_data['photo']['currDate'].split("T")[0]
@@ -464,25 +464,25 @@ async def edit_handler(request: web.Request) -> web.json_response:
     if orig_desc == new_desc:
         data['warnings'].append("New description matched original")
 
-    if orig_tags == new_tags:
+    if orig_tag_list == new_tag_list:
         data['warnings'].append("New tags matched original")
 
-    if orig_date == new_date and orig_desc == new_desc and orig_tags == new_tags:
+    if orig_date == new_date and orig_desc == new_desc and orig_tag_list == new_tag_list:
         data['edit_successful'] = True
         data['warnings'] = "No new changes were submitted!"
         return web.json_response(data)
 
-    orig_tag_list = []
-    new_tag_list = []
-    if len(orig_tags) > 0:
-        for tag in orig_tags:
-            t = int(tag.split(',')[0])
-            orig_tag_list.append(t)
-
-    if len(new_tags) > 0:
-        for tag in new_tags:
-            t = int(tag.split(',')[0])
-            new_tag_list.append(t)
+    # orig_tag_list = []
+    # new_tag_list = []
+    # if len(orig_tags) > 0:
+    #     for tag in orig_tags:
+    #         t = int(tag.split(',')[0])
+    #         orig_tag_list.append(t)
+    #
+    # if len(new_tags) > 0:
+    #     for tag in new_tags:
+    #         t = int(tag.split(',')[0])
+    #         new_tag_list.append(t)
 
     try:
         with db.connect() as conn:
@@ -535,7 +535,7 @@ async def edit_handler(request: web.Request) -> web.json_response:
         data['edit_successful'] = False
         data['error'] = f"{err}"
 
-    # print(f"Returning data {data}")
+    print(f"Returning data {data}")
     return web.json_response(data)
 
 

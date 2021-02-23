@@ -1,35 +1,27 @@
-import React, { Component } from 'react';
+import React from 'react';
 
-class Checkboxes extends Component {
-  constructor(props) {
-    super(props);
 
-  }
-
-  render() {
-    console.log("RETURNING A CHECKBOX ELEMENT");
-    return (
-      <React.Fragment>
+const Checkbox = ({ label, isSelected, onChange }) => {
+  console.log("CHECKBOX COMPONENT CHECKED? ", isSelected);
+  return (
+    <div>
+      <label
+        className="form-check-label"
+        htmlFor={'inlineCheckboxPhotoModal' + '-' + label}
+      >
         <input 
           className="form-check-input"
           type="checkbox"
-          id={'inlineCheckboxPhotoModal' + '-' + this.props.label}
-          value={this.props.label}
-          key={this.props.key}
+          id={'inlineCheckboxPhotoModal' + '-' + label}
+          value={label}
           name="editedPersonTags"
-          onChange={this.props.onChange}
-          checked={this.props.isSelected}
+          onChange={onChange}
+          checked={isSelected}
         />
-        <label
-          className="form-check-label"
-          htmlFor={'inlineCheckboxPhotoModal' + '-' + this.props.label}
-          key={this.props.key + '-label-key'}
-        >
-          {this.props.label}
-        </label>
-      </React.Fragment>
-    );
-  }
+          {label}
+      </label>
+    </div>
+  );
 }
 
-export default Checkboxes;
+export default Checkbox;

@@ -3,7 +3,7 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import moment from 'moment';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Checkboxes from './Checkboxes.js';
+// import Checkbox from './Checkboxes';
 
 // const ACTIVETAGS = this.props.selectedTags ? this.props.selectedTags.filter(sTag => sTag.person_first_name) : null
 
@@ -353,15 +353,18 @@ class PhotoModal extends PureComponent {
   // }
 
   createCheckbox(option) {
-    <Checkboxes 
-      label={option}
-      isSelected={this.state.editForm.checkboxes[option]}
-      onChange={this.handleChange}
-      key={option + '-checkbox-key'}
-    />
+    console.log("CREATE CHECKBOX (SING) FUNCTION with OPTION", option);
+    // return (
+    //   <Checkbox 
+    //     label={option}
+    //     isSelected={this.state.editForm.checkboxes[option]}
+    //     onChange={this.handleChange}
+    //     key={option + '-checkbox-key'}
+    // />);
   }
 
   createCheckboxes() {
+    console.log("CREATE CHECKBOXES FUNCTION");
     this.props.peopleTags.map(tag => this.createCheckbox(tag.person_first_name));
   }
 
@@ -400,7 +403,7 @@ class PhotoModal extends PureComponent {
       <form className="edit-date-form form-inline" onSubmit={this.saveNewData}>
         <div className="form-group mx-3">
           {/*this.state.editForm.checkboxes ? this.state.editForm.checkboxes : null*/}
-          {this.createCheckboxes()}
+          {this.state.editFormToggled ? this.createCheckboxes() : null}
         </div>
         <div className="form-group mx-3">
           {/* <label htmlFor="photoDesc">Photo description:</label> */}
