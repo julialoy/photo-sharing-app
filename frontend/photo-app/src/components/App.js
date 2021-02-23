@@ -19,7 +19,8 @@ class App extends PureComponent {
         isAuthenticated: false
       },
       photos: [],
-      havePhotos: false
+      havePhotos: false,
+      peopleTags: []
     }
 
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
@@ -30,7 +31,6 @@ class App extends PureComponent {
   }
 
   checkLoginStatus() {
-    console.log("CHECKING LOG IN STATUS");
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
       if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
@@ -53,12 +53,19 @@ class App extends PureComponent {
   retrievePhotos() {
     axios.get("http://localhost:8080/", { withCredentials: true })
     .then(data => {
-      if (data.data) {
-        console.log("PHOTOS DATA: ", data.data);
-        if (data.data.length > 0) {
+      if (data.data.photos) {
+        console.log("PHOTOS DATA: ", data.data.photos);
+        if (data.data.photos.length > 0) {
           this.setState( () => ({
-            photos: data.data,
+            photos: data.data.photos,
             havePhotos: true
+          }));
+        }
+      }
+      if (data.data.tags) {
+        if (data.data.tags.length > 0) {
+          this.setState( () => ({
+            peopleTags: [...data.data.tags]
           }));
         }
       }
@@ -71,7 +78,7 @@ class App extends PureComponent {
   }
 
   handleSuccessfulAuth(data) {
-    console.log("SUCCESSFUL AUTH DATA: ", data)
+    // console.log("SUCCESSFUL AUTH DATA: ", data)
     this.setState(() => ({
       current_user: {
         id: data.user_id,
@@ -94,7 +101,6 @@ class App extends PureComponent {
   }
   
   componentDidMount() {
-    console.log("COMPONENT DID MOUNT");
     this.checkLoginStatus();
   }
 
@@ -111,6 +117,7 @@ class App extends PureComponent {
                   isAuthed={this.state.current_user.isAuthenticated}
                   currentUser={this.state.current_user}
                   photos={this.state.photos}
+                  peopleTags={this.state.peopleTags}
                   havePhotos={this.state.havePhotos}
                   handleSuccessfulLogOut={this.handleSuccessfulLogOut}
                   retrievePhotos={this.retrievePhotos}

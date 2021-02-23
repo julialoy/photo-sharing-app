@@ -1,11 +1,12 @@
 import React, { PureComponent } from "react";
-import { withRouter, BrowserRouter, Link, Switch, Route } from "react-router-dom";
+import { withRouter, BrowserRouter, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
+import moment from 'moment';
 import Upload from "./Upload";
 import Year from "./Year";
-import PhotoModal from './PhotoModal';
 import Settings from './UserSettings';
+import Modal from "./Modal";
 
 class Home extends PureComponent {
   constructor(props) {
@@ -13,19 +14,24 @@ class Home extends PureComponent {
 
     this.state = {
       showUploadModal: false,
-      showPhotoModal: false,
-      photoId: "",
-      photoFilename: "",
-      fullSizeLoc: "",
-      fullSizeDate: "",
-      photoTitle: "",
-      photoDesc: "",
-      showSettingsModal: false
+      showSettingsModal: false,
+      photoModal: {
+        showPhotoModal: false,
+        photoId: null,
+        photoFilename: null,
+        fullSizeLoc: null,
+        fullSizeDate: null,
+        photoTitle: null,
+        photoDesc: null,
+        selectedTags: [],
+        mediaType: null,
+        successMsg: null,
+        errorMsg: null
+      }
     };
 
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
-/*     this.handleUploadRedirect = this.handleUploadRedirect.bind(this); */
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
     this.showPhotoModal = this.showPhotoModal.bind(this);
     this.handlePhotoModalClose = this.handlePhotoModalClose.bind(this);
@@ -34,25 +40,98 @@ class Home extends PureComponent {
     this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
     this.showSettingsModal = this.showSettingsModal.bind(this);
     this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
+    this.handlePhotoDataSubmit = this.handlePhotoDataSubmit.bind(this);
+    this.handleCloseModalMsg = this.handleCloseModalMsg.bind(this);
   }
 
   static propTypes = {
     isAuthed: PropTypes.bool.isRequired,
     currentUser: PropTypes.object,
     photos: PropTypes.array,
+    peopleTags: PropTypes.array,
     havePhotos: PropTypes.bool,
     handleSuccessfulLogOut: PropTypes.func,
     retrievePhotos: PropTypes.func,
     showFullSize: PropTypes.func
   };
 
+  handlePhotoDataSubmit(evt, editedDate, editedDesc, editedTags) {
+      evt.preventDefault();
+      let validSave = true
+
+      if (editedDate === null) {
+        editedDate = this.state.photoModal.fullSizeDate;
+      }
+  
+      if (!moment(editedDate).isValid()) {
+        validSave = false;
+      }
+
+      if ( 
+        (editedDate === this.state.photoModal.fullSizeDate || editedDate === null) 
+        && (editedDesc === this.state.photoModal.photoDesc || editedDesc === null) 
+        && editedTags === this.state.photoModal.selectedTags) {
+        validSave = false;
+      }
+      
+      if (validSave) {
+        axios.post("http://localhost:8080/edit",
+        {
+          photo: {
+            id: this.state.photoModal.photoId,
+            filename: this.state.photoModal.photoFilename,
+            currDate: this.state.photoModal.fullSizeDate,
+            newDate: editedDate !== null ? editedDate : this.state.photoModal.fullSizeDate,
+            currPhotoDesc: this.state.photoModal.photoDesc,
+            newPhotoDesc: editedDesc !== null ? editedDesc : this.state.photoModal.photoDesc,
+            currTags: this.state.photoModal.selectedTags,
+            newTags: editedTags
+          }
+        },
+        {withCredentials: true}
+        )
+        .then(response => {
+          if (response.data.edit_successful) {
+            this.setState( prevState => ({
+              photoModal: {
+                showPhotoModal: true,
+                photoId: prevState.photoModal.photoId,
+                photoFilename: prevState.photoModal.photoFilename,
+                fullSizeLoc: prevState.photoModal.fullSizeLoc,
+                fullSizeDate: editedDate,
+                photoTitle: prevState.photoModal.photoTitle,
+                photoDesc: editedDesc,
+                mediaType: prevState.photoModal.mediaType,
+                fullSizeDate: editedDate,
+                photoDesc: editedDesc,
+                selectedTags: [...editedTags],
+                successMsg: "Success!"
+              }
+            }));
+          } else {
+            console.log("Unable to save data");
+            this.setState({
+              photoModal: {
+                showPhotoModal: true,
+                errorMsg: "Unable to save."
+              }
+            });
+          }
+        })
+        .catch(err => console.log(err));
+      } else {
+        console.log("INVALID DATA");
+        this.setState({
+          photoModal: {
+            errorMsg: "Invalid data entered"
+          }
+        });
+      }
+  }
+
   handleLoginRedirect() {
     this.props.history.push("/login");
   }
-
-/*   handleUploadRedirect() {
-    this.props.history.push("/upload");
-  } */
   
   handleLogout(evt) {
     evt.preventDefault();
@@ -117,15 +196,18 @@ class Home extends PureComponent {
 
   showPhotoModal(photoData) {
     const photoDateStrip = photoData.date_taken.split('T')[0];
-    
     this.setState({
-      showPhotoModal: true,
-      photoId: photoData.photo_id,
-      photoFilename: photoData.filename,
-      photoTitle: photoData.title,
-      photoDesc: photoData.description,
-      fullSizeLoc: photoData.full_size_loc,
-      fullSizeDate: photoDateStrip ? photoDateStrip : photoData.date_taken
+      photoModal: {
+        showPhotoModal: true,
+        photoId: photoData.photo_id,
+        selectedTags: [...photoData.child_id],
+        photoFilename: photoData.filename,
+        photoTitle: photoData.title,
+        photoDesc: photoData.description,
+        fullSizeLoc: photoData.full_size_loc,
+        fullSizeDate: photoDateStrip ? photoDateStrip : photoData.date_taken,
+        mediaType: photoData.filename.split('.')[1]
+      }
     });
     // Add 'modal-open'class on open so scroll bar will be removed and scrolling locked on body
     document.body.classList.add('modal-open');
@@ -133,14 +215,40 @@ class Home extends PureComponent {
 
   handlePhotoModalClose() {
     this.setState({
-      showPhotoModal: false,
-      photoId: "",
-      photoFilename: "",
-      fullSizeLoc: "",
-      fullSizeDate: ""
+      photoModal: {
+        showPhotoModal: false,
+        photoId: null,
+        selectedTags: [],
+        photoFilename: null,
+        photoTitle: null,
+        photoDesc: null,
+        fullSizeLoc: null,
+        fullSizeDate: null,
+        mediaType: null,
+        successMsg: null,
+        errorMsg: null
+      }
     });
     // Remove 'modal-open' class on close so body will scroll
     document.body.classList.remove('modal-open');
+  }
+
+  handleCloseModalMsg() {
+    this.setState(prevState => ({
+      photoModal: {
+        showPhotoModal: prevState.photoModal.showPhotoModal,
+        photoId: prevState.photoModal.photoId,
+        photoFilename: prevState.photoModal.photoFilename,
+        fullSizeLoc: prevState.photoModal.fullSizeLoc,
+        fullSizeDate: prevState.photoModal.fullSizeDate,
+        photoTitle: prevState.photoModal.photoTitle,
+        photoDesc: prevState.photoModal.photoDesc,
+        selectedTags: prevState.photoModal.selectedTags,
+        mediaType: prevState.photoModal.mediaType,
+        successMsg: null,
+        errorMsg: null
+      }
+    }));
   }
 
   componentDidMount() {
@@ -148,18 +256,10 @@ class Home extends PureComponent {
   }
 
   render() {
-        
     const {
       isAuthed,
       currentUser,
-      photos,
-      havePhotos
     } = this.props;
-
-/*     console.log("LOGGED IN?", isAuthed);
-    console.log("PHOTOS: ", photos);
-    console.log("HAVE PHOTOS? ", havePhotos);
-    console.log("SHOULD MODAL SHOW?", this.state.showPhotoModal); */
 
     if (!isAuthed) {
       this.handleLoginRedirect();
@@ -253,20 +353,34 @@ class Home extends PureComponent {
           isAuthed={isAuthed}
           show={this.state.showSettingsModal}
           currentUser={currentUser}
+          peopleTags={this.props.peopleTags}
           onClose={this.handleSettingsModalClose}
         />
-        <PhotoModal 
-          show={this.state.showPhotoModal}
-          photoId={this.state.photoId}
-          photoName={this.state.photoFilename}
-          fullPhoto={this.state.fullSizeLoc}
-          photoDate={this.state.fullSizeDate}
-          photoTitle={this.state.photoTitle} 
-          photoDesc={this.state.photoDesc}
-          onClose={this.handlePhotoModalClose}
-          handlePhotoDateChange={this.props.handlePhotoDateChange} 
-        />
-        {this.props.havePhotos ? <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : <p>You haven't added any photos!</p>}
+        <Modal
+            isOpen={this.state.photoModal.showPhotoModal} 
+            photoId={this.state.photoModal.photoId} 
+            photoName={this.state.photoModal.photoFilename} 
+            fullPhoto={this.state.photoModal.fullSizeLoc}
+            photoDate={this.state.photoModal.fullSizeDate}
+            photoTitle={this.state.photoModal.photoTitle}
+            photoDesc={this.state.photoModal.photoDesc}
+            onClose={this.handlePhotoModalClose}
+            handlePhotoDateChange={this.props.handlePhotoDateChange}
+            peopleTags={this.props.peopleTags}
+            selectedTags={this.state.photoModal.selectedTags}
+            mediaType={this.state.photoModal.mediaType}
+            handlePhotoDataSubmit={this.handlePhotoDataSubmit}
+            successMsg={this.state.photoModal.successMsg}
+            errorMsg={this.state.photoModal.errorMsg}
+            handleCloseMsg={this.handleCloseModalMsg}
+          /> 
+        {this.props.havePhotos 
+        ? <Year 
+            years={this.state.photoYears} 
+            photos={this.props.photos} 
+            showPhotoModal={this.showPhotoModal} 
+          /> 
+        : <p>You haven't added any photos!</p>}
         </div>
       </BrowserRouter>
     )
