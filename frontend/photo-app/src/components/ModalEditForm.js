@@ -7,12 +7,12 @@ const createCheckboxes = (props) => {
       <Checkbox 
         label={tag.person_first_name} 
         isSelected={props.checkboxes[tag.person_first_name]} 
-        key={tag.person_first_name + '-checkbox-key'}
+        key={`${tag.person_first_name }-checkbox-key`}
         onChange={props.handleCheckboxChange}
       />
     )
-  )
-}
+  );
+};
 
 const ModalEditForm = (props) => {
   return (
@@ -29,7 +29,8 @@ const ModalEditForm = (props) => {
           name="editedDesc" 
           id="photoDesc" 
           onChange={props.handleFormChange}
-        ></textarea>
+        >
+        </textarea>
       </div>
       <div className="form-group mx-3">
         <input 
@@ -52,6 +53,6 @@ const ModalEditForm = (props) => {
       </div>
     </form>
   );
-}
+};
 
 export default ModalEditForm;

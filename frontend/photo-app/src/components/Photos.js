@@ -19,8 +19,8 @@ class Photos extends Component {
 
   createChildElements(elementArray) {
     let childArray = [];
-    for (let x = 0; x < elementArray.length; x++) {
-      if (elementArray[x].filename.split('.')[1] === 'mp4') {
+    for(let x = 0; x < elementArray.length; x++) {
+      if(elementArray[x].filename.split('.')[1] === 'mp4') {
         childArray.push(
           <video 
             className="image-element-class" 
@@ -29,7 +29,7 @@ class Photos extends Component {
           >
             <source 
               className="image-element-class" 
-              key={elementArray[x].filename + "-src"} 
+              key={`${elementArray[x].filename}-src`} 
               type="video/mp4"
               src={elementArray[x].web_size_loc}
             />
@@ -54,15 +54,15 @@ class Photos extends Component {
     const childElements = this.createChildElements(this.props.yearPhotos);
     return (
       <Masonry
-        className={'my-gallery-class'}
-        elementType={'ul'}
+        className={"my-gallery-class"}
+        elementType={"ul"}
         options={masonryOptions}
         disableImagesLoaded={false}
         updateOnEachImageLoad={true}
       > 
-          {childElements} 
+        {childElements} 
       </Masonry>
-    )
+    );
   }
 }
 

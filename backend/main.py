@@ -10,9 +10,9 @@ from aiohttp_session.cookie_storage import EncryptedCookieStorage
 import jinja2
 
 from db import create_tables, close_pg, init_pg, clean_invite_db, delete_all_auth_tokens
-from routes import (add_person_handler, edit_handler, index_handler, invite_handler, logged_in_handler, login_handler,
-                    logout_handler, register_invite_handler, registration_handler, reset_password_handler, router,
-                    upload_handler)
+from routes import (add_person_handler, delete_tag_handler, edit_handler, index_handler, invite_handler,
+                    logged_in_handler, login_handler, logout_handler, register_invite_handler, registration_handler,
+                    reset_password_handler, router, upload_handler)
 from settings import config, key
 
 
@@ -41,6 +41,7 @@ async def init_app() -> web.Application:
     app.router.add_route("POST", "/register-invite", register_invite_handler)
     app.router.add_route("POST", "/reset-password", reset_password_handler)
     app.router.add_route("POST", "/add-person", add_person_handler)
+    app.router.add_route("POST", "/delete-tag", delete_tag_handler)
     app.router.add_static("/static", path=str(BASE_PATH / "static"), name="static")
     app.router.add_static("/images", path=str(BASE_PATH / "static/images"), name="images")
     cors = aiohttp_cors.setup(app, defaults={

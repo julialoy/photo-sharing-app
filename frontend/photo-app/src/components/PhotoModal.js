@@ -264,7 +264,7 @@ class PhotoModal extends PureComponent {
     }
     for (let x = 0; x < tagsArray.length; x++) {
       if (activeTagIds.includes(tagsArray[x].person_id)) {
-        const elemId = 'inlineCheckboxPhotoModal' + '-' + tagsArray[x].person_first_name;
+        const elemId = `inlineCheckboxPhotoModal-${tagsArray[x].person_first_name}`;
         checkedElemIds.push(elemId);
       }
     }
@@ -290,7 +290,7 @@ class PhotoModal extends PureComponent {
         <input 
           className="form-check-input" 
           type="checkbox" 
-          id={'inlineCheckboxPhotoModal' + '-' + tagsArray[x].person_first_name} 
+          id={`inlineCheckboxPhotoModal-${tagsArray[x].person_first_name}`} 
           value={tagValue} 
           key={tagsArray[x].person_id + '-input-key'} 
           name="newPersonTags" 
@@ -298,8 +298,8 @@ class PhotoModal extends PureComponent {
         />
         <label 
           className="form-check-label" 
-          htmlFor={'inlineCheckbox' + '-' + tagsArray[x].person_first_name} 
-          key={tagsArray[x].person_id + '-label-key'}>
+          htmlFor={`inlineCheckbox-${tagsArray[x].person_first_name}`} 
+          key={`${tagsArray[x].person_id}-label-key`}>
             {tagsArray[x].person_first_name}
         </label>
       </div>;
@@ -315,16 +315,16 @@ class PhotoModal extends PureComponent {
         <input 
           className="form-check-input"
           type="checkbox"
-          id={'inlineCheckboxPhotoModal' + '-' + this.state.editForm.checkboxes[x][0]}
+          id={`inlineCheckboxPhotoModal-${this.state.editForm.checkboxes[x][0]}`}
           value={this.state.editForm.checkboxes[x][0]}
-          key={this.state.editForm.checkboxes[x][0] + '-input-key'}
+          key={`${this.state.editForm.checkboxes[x][0]}-input-key`}
           name="editedPersonTags"
           onChange={this.handleChange}
         />
         <label
           className="form-check-label"
-          htmlFor={'inlineCheckbox' + '-' + this.state.editForm.checkboxes[x][0]}
-          key={this.state.editForm.checkboxes[x][0] + '-label-key'}
+          htmlFor={`inlineCheckbox-${this.state.editForm.checkboxes[x][0]}`}
+          key={`${this.state.editForm.checkboxes[x][0]}-label-key`}
         >
           {this.state.editForm.checkboxes[x][0]}
         </label>
@@ -376,7 +376,8 @@ class PhotoModal extends PureComponent {
       // photoDate, 
       // photoTitle, 
       // photoDesc,
-      peopleTags} = this.props;
+      // peopleTags
+    } = this.props;
     //const availablePeopleTags = this.createPeopleTagList(peopleTags);
     // const selectedCheckboxes = this.createActiveTagList(peopleTags);
     // this.setCheckboxes(selectedCheckboxes);

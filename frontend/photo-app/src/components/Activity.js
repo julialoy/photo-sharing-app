@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 
 class Activity extends Component {
   render() {
@@ -7,7 +6,7 @@ class Activity extends Component {
       <li className="nav-item">
         <button type="button" className="nav-link btn-outline-light">Activity</button>
       </li>
-    )
+    );
   }
 }
 

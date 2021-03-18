@@ -7,6 +7,6 @@ const ModalSuccess = (props) => (
     </button>
     {props.successMsg}
   </div>
-)
+);
 
 export default ModalSuccess;

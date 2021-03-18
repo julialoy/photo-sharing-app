@@ -3,9 +3,9 @@ import { withRouter, BrowserRouter, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
 import moment from 'moment';
-import Upload from "./Upload";
+// import Upload from "./Upload";
 import Year from "./Year";
-import Settings from './UserSettings';
+// import Settings from "./UserSettings";
 import Modal from "./Modal";
 
 class Home extends PureComponent {
@@ -34,12 +34,12 @@ class Home extends PureComponent {
     this.handleLogout = this.handleLogout.bind(this);
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
     this.showPhotoModal = this.showPhotoModal.bind(this);
-    this.handlePhotoModalClose = this.handlePhotoModalClose.bind(this);
+    this.handleModalClose = this.handleModalClose.bind(this);
     this.handleCompletePhotoUpload = this.handleCompletePhotoUpload.bind(this);
     this.showUploadModal = this.showUploadModal.bind(this);
-    this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
+    // this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
     this.showSettingsModal = this.showSettingsModal.bind(this);
-    this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
+    // this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
     this.handlePhotoDataSubmit = this.handlePhotoDataSubmit.bind(this);
     this.handleCloseModalMsg = this.handleCloseModalMsg.bind(this);
   }
@@ -57,24 +57,24 @@ class Home extends PureComponent {
 
   handlePhotoDataSubmit(evt, editedDate, editedDesc, editedTags) {
       evt.preventDefault();
-      let validSave = true
+      let validSave = true;
 
-      if (editedDate === null) {
+      if(editedDate === null) {
         editedDate = this.state.photoModal.fullSizeDate;
       }
   
-      if (!moment(editedDate).isValid()) {
+      if(!moment(editedDate).isValid()) {
         validSave = false;
       }
 
-      if ( 
+      if( 
         (editedDate === this.state.photoModal.fullSizeDate || editedDate === null) 
         && (editedDesc === this.state.photoModal.photoDesc || editedDesc === null) 
         && editedTags === this.state.photoModal.selectedTags) {
         validSave = false;
       }
       
-      if (validSave) {
+      if(validSave) {
         axios.post("http://localhost:8080/edit",
         {
           photo: {
@@ -91,7 +91,7 @@ class Home extends PureComponent {
         {withCredentials: true}
         )
         .then(response => {
-          if (response.data.edit_successful) {
+          if(response.data.edit_successful) {
             this.setState( prevState => ({
               photoModal: {
                 showPhotoModal: true,
@@ -102,8 +102,6 @@ class Home extends PureComponent {
                 photoTitle: prevState.photoModal.photoTitle,
                 photoDesc: editedDesc,
                 mediaType: prevState.photoModal.mediaType,
-                fullSizeDate: editedDate,
-                photoDesc: editedDesc,
                 selectedTags: [...editedTags],
                 successMsg: "Success!"
               }
@@ -144,12 +142,12 @@ class Home extends PureComponent {
       {withCredentials: true}
       )
       .then(response => {
-        if (response.data.log_out_successful) {
+        if(response.data.log_out_successful) {
           this.props.handleSuccessfulLogOut(response.data);
           this.handleLoginRedirect();
         }
       })
-      .catch(err => console.log("LOGOUT ERROR: ", err));
+      .catch(err => console.log(`LOGOUT ERROR: ${err}`));
   }
 
   handleRetrievePhotos() {
@@ -157,7 +155,7 @@ class Home extends PureComponent {
   }
 
   handleCompletePhotoUpload(didPhotoUpload) {
-    if (didPhotoUpload) {
+    if(didPhotoUpload) {
       this.handleRetrievePhotos();
     } else {
       console.log("Photo did not upload properly");
@@ -171,12 +169,12 @@ class Home extends PureComponent {
     document.body.classList.add('modal-open');
   }
 
-  handleSettingsModalClose() {
-    this.setState({
-      showSettingsModal: false
-    });
-    document.body.classList.remove('modal-open');
-  }
+  // handleSettingsModalClose() {
+  //   this.setState({
+  //     showSettingsModal: false
+  //   });
+  //   document.body.classList.remove('modal-open');
+  // }
 
   showUploadModal() {
     // Lock scrolling on body component
@@ -186,13 +184,13 @@ class Home extends PureComponent {
     document.body.classList.add('modal-open');
   }
 
-  handleUploadModalClose() {
-    this.setState({
-      showUploadModal: false
-    });
-    // Allow scrolling on body component
-    document.body.classList.remove('modal-open');
-  }
+  // handleUploadModalClose() {
+  //   this.setState({
+  //     showUploadModal: false
+  //   });
+  //   // Allow scrolling on body component
+  //   document.body.classList.remove('modal-open');
+  // }
 
   showPhotoModal(photoData) {
     const photoDateStrip = photoData.date_taken.split('T')[0];
@@ -213,8 +211,10 @@ class Home extends PureComponent {
     document.body.classList.add('modal-open');
   }
 
-  handlePhotoModalClose() {
+  handleModalClose() {
     this.setState({
+      showUploadModal: false,
+      showSettingsModal: false,
       photoModal: {
         showPhotoModal: false,
         photoId: null,
@@ -262,7 +262,8 @@ class Home extends PureComponent {
       currentUser,
     } = this.props;
 
-    if (!isAuthed) {
+    // This creates a warning about not updating during an existing state transition
+    if(!isAuthed) {
       this.handleLoginRedirect();
     }
 
@@ -343,7 +344,7 @@ class Home extends PureComponent {
           </header>
         </div>
         <div className="container-fluid" id="main-body">
-        <Upload 
+        {/* <Upload 
           isAuthed={isAuthed}
           show={this.state.showUploadModal}
           completePhotoUpload={this.handleCompletePhotoUpload}
@@ -356,32 +357,34 @@ class Home extends PureComponent {
           currentUser={currentUser}
           peopleTags={this.props.peopleTags}
           onClose={this.handleSettingsModalClose}
-        />
+        /> */}
         <Modal
-            isOpen={this.state.photoModal.showPhotoModal} 
-            photoId={this.state.photoModal.photoId} 
-            photoName={this.state.photoModal.photoFilename} 
-            fullPhoto={this.state.photoModal.fullSizeLoc}
-            photoDate={this.state.photoModal.fullSizeDate}
-            photoTitle={this.state.photoModal.photoTitle}
-            photoDesc={this.state.photoModal.photoDesc}
-            onClose={this.handlePhotoModalClose}
-            handlePhotoDateChange={this.props.handlePhotoDateChange}
-            peopleTags={this.props.peopleTags}
-            selectedTags={this.state.photoModal.selectedTags}
-            mediaType={this.state.photoModal.mediaType}
-            handlePhotoDataSubmit={this.handlePhotoDataSubmit}
-            successMsg={this.state.photoModal.successMsg}
-            errorMsg={this.state.photoModal.errorMsg}
-            handleCloseMsg={this.handleCloseModalMsg}
-          /> 
-        {this.props.havePhotos 
-        ? <Year 
-            years={this.state.photoYears} 
-            photos={this.props.photos} 
-            showPhotoModal={this.showPhotoModal} 
-          /> 
-        : <p>You haven't added any photos!</p>}
+          isAuthed={isAuthed}
+          uploadIsOpen={this.state.showUploadModal}
+          handlePhotoUpload={this.handleCompletePhotoUpload}
+          settIsOpen={this.state.showSettingsModal}
+          currentUser={currentUser}
+          photoIsOpen={this.state.photoModal.showPhotoModal} 
+          photoId={this.state.photoModal.photoId} 
+          photoName={this.state.photoModal.photoFilename} 
+          fullPhoto={this.state.photoModal.fullSizeLoc}
+          photoDate={this.state.photoModal.fullSizeDate}
+          photoTitle={this.state.photoModal.photoTitle}
+          photoDesc={this.state.photoModal.photoDesc}
+          onClose={this.handleModalClose}
+          handlePhotoDateChange={this.props.handlePhotoDateChange}
+          peopleTags={this.props.peopleTags}
+          selectedTags={this.state.photoModal.selectedTags}
+          mediaType={this.state.photoModal.mediaType}
+          handlePhotoDataSubmit={this.handlePhotoDataSubmit}
+          successMsg={this.state.photoModal.successMsg}
+          errorMsg={this.state.photoModal.errorMsg}
+          handleCloseMsg={this.handleCloseModalMsg}
+          handlePeopleTagChange={this.props.handlePeopleTagChange}
+        /> 
+        {this.props.havePhotos ? 
+          <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : 
+          <p>You haven't added any photos!</p>}
         </div>
       </BrowserRouter>
     )

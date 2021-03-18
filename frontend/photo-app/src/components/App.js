@@ -28,15 +28,16 @@ class App extends PureComponent {
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
     this.retrievePhotos = this.retrievePhotos.bind(this);
     this.handlePhotoDateChange = this.handlePhotoDateChange.bind(this);
+    this.handlePeopleTagChange = this.handlePeopleTagChange.bind(this);
   }
 
   checkLoginStatus() {
     axios.get("http://localhost:8080/logged_in", { withCredentials: true })
     .then(response => {
-      if (response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
+      if(response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
         this.handleSuccessfulAuth(response.data);
         this.retrievePhotos();
-      } else if (!response.data.is_logged_in && this.state.current_user.isAuthenticated) {
+      } else if(!response.data.is_logged_in && this.state.current_user.isAuthenticated) {
         this.setState(() => ({
           current_user: {
             id: null,
@@ -47,34 +48,40 @@ class App extends PureComponent {
         }));
       }
     })
-    .catch(err => console.log("LOGIN ERROR: ", err));
+    .catch(err => console.log(`LOGIN ERROR: ${err}`));
   }
 
   retrievePhotos() {
-    axios.get("http://localhost:8080/", { withCredentials: true })
+    axios.get("http://localhost:8080/", {withCredentials: true})
     .then(data => {
-      if (data.data.photos) {
-        console.log("PHOTOS DATA: ", data.data.photos);
-        if (data.data.photos.length > 0) {
+      if(data.data.photos) {
+        console.log(`PHOTOS DATA: ${data.data.photos}`);
+        if(data.data.photos.length > 0) {
           this.setState( () => ({
             photos: data.data.photos,
             havePhotos: true
           }));
         }
       }
-      if (data.data.tags) {
-        if (data.data.tags.length > 0) {
+      if(data.data.tags) {
+        if(data.data.tags.length > 0) {
           this.setState( () => ({
             peopleTags: [...data.data.tags]
           }));
         }
       }
     })
-    .catch(err => console.log("ERROR: ", err));
+    .catch(err => console.log(`ERROR: ${err}`));
   }
 
   handlePhotoDateChange() {
     this.retrievePhotos();
+  }
+
+  handlePeopleTagChange() {
+    console.log("PEOPLE TAG CHANGE HANDLER");
+    this.retrievePhotos();
+    console.log("STATE AFTER HANDLE TAG CHANGE: ", this.state.peopleTags);
   }
 
   handleSuccessfulAuth(data) {
@@ -93,7 +100,7 @@ class App extends PureComponent {
     this.setState(() => ({
       current_user: {
         is: null,
-        username: '',
+        username: "",
         accessLevel: null,
         isAuthenticated: false
       }
@@ -119,6 +126,7 @@ class App extends PureComponent {
                   photos={this.state.photos}
                   peopleTags={this.state.peopleTags}
                   havePhotos={this.state.havePhotos}
+                  handlePeopleTagChange={this.handlePeopleTagChange}
                   handleSuccessfulLogOut={this.handleSuccessfulLogOut}
                   retrievePhotos={this.retrievePhotos}
                   handlePhotoDateChange={this.handlePhotoDateChange}

@@ -31,12 +31,12 @@ class Logout extends Component {
       {withCredentials: true}
       )
       .then(response => {
-        if (response.data.log_out_successful) {
+        if(response.data.log_out_successful) {
           this.props.handleSuccessfulLogOut(response.data);
           this.handleLoginRedirect();
         }
       })
-      .catch(err => console.log("LOGOUT ERROR: ", err));
+      .catch(err => console.log(`LOGOUT ERROR: ${err}`));
   }
 
   render() {

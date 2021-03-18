@@ -42,7 +42,7 @@ class Upload extends Component {
   }
 
   handleKeyDown(e) {
-    if (e.keyCode === 27) {
+    if(e.keyCode === 27) {
       this.handleUploadModalClose();
     }
   }
@@ -65,13 +65,13 @@ class Upload extends Component {
   handleRemoveFromDrop(file) {
     const targetFilename = file.file.fileName;
     let deleteIndex;
-    if (this.state.files.length <= 1) {
+    if(this.state.files.length <= 1) {
       this.setState({
         files: []
       });
     } else {
-      for (let x = 0; x < this.state.files.length; x++) {
-        if (this.state.files[x].fileName === targetFilename) {
+      for(let x = 0; x < this.state.files.length; x++) {
+        if(this.state.files[x].fileName === targetFilename) {
           deleteIndex = x;
         }
       }
@@ -98,21 +98,21 @@ class Upload extends Component {
     evt.preventDefault();
     let imageData = new FormData();
 
-    for (let x= 0; x < this.state.files.length; x++) {
+    for(let x= 0; x < this.state.files.length; x++) {
       imageData.append('image' + x, this.state.files[x].fileData);
     }
 
     axios.post("http://localhost:8080/upload",
       imageData, 
-      { withCredentials: true }
+      {withCredentials: true}
       )
       .then(response => {
-        if (response.data.error) {
+        if(response.data.error) {
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
           });
           console.log("ERROR UPLOADING: ", response.data.error);
-        } else if (response.data.upload_successful) {
+        } else if(response.data.upload_successful) {
           this.props.completePhotoUpload(true);
           this.setState({
             successMsg: "Upload successful!"
@@ -131,13 +131,13 @@ class Upload extends Component {
   handleThumbRender(filesArray) {
     console.log("IN HANDLE THUMB RENDER: ", filesArray);
     let uploadArray = [];
-    for (let x = 0; x < filesArray.length; x++) {
+    for(let x = 0; x < filesArray.length; x++) {
       let fileExtension = filesArray[x].fileName.split('.')[1];
-      if (fileExtension === 'mp4') {
+      if(fileExtension === 'mp4') {
         uploadArray.push(
           <span className="upload-thumb-container">
-            <video className="video-thumb" key={filesArray[x].fileName + "-video"}>
-              <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview}/>
+            <video className="video-thumb" key={`${filesArray[x].fileName}-video`}>
+              <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview} />
             </video>
           </span>
         );
@@ -161,17 +161,19 @@ class Upload extends Component {
       </button>
       </div>;
 
-    if (!isAuthed) {
+    if(!isAuthed) {
       this.handleLoginRedirect();
     }
 
-    if (show) {
+    if(show) {
       window.addEventListener('keydown', this.handleKeyDown);
-    }
-
-    if (!show) {
+    } else {
       return null;
     }
+
+    // if (!show) {
+    //   return null;
+    // }
 
     return (
       <div className="modal-backdrop">
@@ -203,7 +205,12 @@ class Upload extends Component {
                 <ul id="thumb-list">
                   {this.state.files.map(file => (
                     <li key={file.fileName}>
-                      {file.fileName} <button className="close" type="button" key={file.fileName + "-btn"} id="thumb-delete-btn"><span key={file.fileName + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>&times;</span></button>
+                      {file.fileName} 
+                      <button className="close" type="button" key={file.fileName + "-btn"} id="thumb-delete-btn">
+                        <span key={file.fileName + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>
+                          &times;
+                        </span>
+                      </button>
                     </li>
                   ))}
                   
@@ -215,7 +222,7 @@ class Upload extends Component {
           </div>
         </div>
       </div>
-    )
+    );
   }
 }
 

@@ -60,8 +60,7 @@ class ConfirmInvite extends Component {
     console.log("ACCEPT INVITE");
     const {
       email,
-      inviteCode,
-      password
+      inviteCode
     } = this.state;
 
     axios.post("http://localhost:8080/register-invite",
@@ -71,20 +70,18 @@ class ConfirmInvite extends Component {
           code: inviteCode
         }
       },
-      { withCredentials: true },
+      {withCredentials: true},
     )
     .then(response => {
       if (response.data) {
-        console.log("INVITE CONFIRMATION DATA: ", response.data);
+        console.log(`INVITE CONFIRMATION DATA: ${response.data}`);
         this.setState({
           inviteSucceeded: true,
           successMsg: "Confirmation succeeded!"
         });  
       }
     })
-    .catch(error => {
-      console.log("INVITE CONFIRMATION ERROR: ", error);
-    });
+    .catch(error => console.log(`INVITE CONFIRMATION ERROR: ${error}`));
   }
 
   handlePasswordSubmit(evt) {
@@ -97,7 +94,7 @@ class ConfirmInvite extends Component {
             password: this.state.password
           }
         },
-        { withCredentials: true }
+        {withCredentials: true}
       )
       .then(response => {
         if (response.data) {
@@ -123,50 +120,72 @@ class ConfirmInvite extends Component {
     const errorDiv = <div className="alert alert-danger alert-dimissible fade show" role="alert">
         That email or code is incorrect.
         <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={this.handleCloseErrorMsg}>
-          <span aria-hidden="true">&times;</span>
+          <span aria-hidden="true">
+            &times;
+          </span>
         </button>
       </div>;
 
     const successDiv = <div className="alert alert-success alert-dismissible fade show" role="alert">
         { this.state.successMsg }
         <button type="button" className="close" data-dismiss="alert" aria-label="Close" onClick={this.handleCloseSuccessMsg}>
-          <span aria-hidden="true">&times;</span>
+          <span aria-hidden="true">
+            &times;
+          </span>
         </button>
       </div>;
 
     const emailCodeDiv = <form id="confirmInviteForm" className="form-signin" onSubmit={this.handleSubmit}>
           <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="71" height="72" />
-          { this.state.errorMsg ? errorDiv : null }
-          <h1 className="h4 mb-3 font-weight-normal">Please enter your email and invite code</h1>
-          <label htmlFor="inputEmail" className="sr-only">Email address</label>
+          {this.state.errorMsg ? errorDiv : null}
+          <h1 className="h4 mb-3 font-weight-normal">
+            Please enter your email and invite code
+          </h1>
+          <label htmlFor="inputEmail" className="sr-only">
+            Email address
+          </label>
           <input type="email" id="inputEmail" className="form-control" placeholder="Email" name="email" value={email} onChange={this.handleChange} required autoFocus />
-          <label htmlFor="inviteCode" className="sr-only">Invite code</label>
+          <label htmlFor="inviteCode" className="sr-only">
+            Invite code
+          </label>
           <input type="inviteCode" id="inviteCode" className="form-control" placeholder="Invite code" name="inviteCode" value={inviteCode} onChange={this.handleChange} required />
-          <button className="btn btn-lg btn-dark btn-block" type="submit" id="confirmInviteSubmit">Accept invite</button>
-          <p>Already have an account? <a href="/login">Go here.</a></p>
+          <button className="btn btn-lg btn-dark btn-block" type="submit" id="confirmInviteSubmit">
+            Accept invite
+          </button>
+          <p>
+            Already have an account? <a href="/login">Go here.</a>
+          </p>
       </form>;
 
 
     const passwordDiv = <form id="passwordForm" className="form-signin" onSubmit={this.handlePasswordSubmit}>
           <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="71" height="72" />
-          { this.state.successMsg ? successDiv : null }
-          <h1 className="h4 mb-3 font-weight-normal">Please create your password</h1>
-          <label htmlFor="inputPassword" className="sr-only">Password</label>
+          {this.state.successMsg ? successDiv : null}
+          <h1 className="h4 mb-3 font-weight-normal">
+            Please create your password
+          </h1>
+          <label htmlFor="inputPassword" className="sr-only">
+            Password
+          </label>
           <input type="password" id="inputPassword" className="form-control" placeholder="Password" name="password" value={password} onChange={this.handleChange} required autoFocus />
-          <label htmlFor="confirmPassword" className="sr-only">Confirm password</label>
+          <label htmlFor="confirmPassword" className="sr-only">
+            Confirm password
+          </label>
           <input type="password" id="confirmPassword" className="form-control" placeholder="Confirm password" name="confirmPassword" value={confirmPassword} onChange={this.handleChange} required />
-          <button className="btn btn-lg btn-dark btn-block" type="submit" id="createPassword">Create password</button>
+          <button className="btn btn-lg btn-dark btn-block" type="submit" id="createPassword">
+            Create password
+          </button>
       </form>;
     
 /*     if (this.props.isAuthed === true){
       return <Redirect to="/" />
     } */
 
-    console.log("CONFIRM INVITE STATE: ", this.state);
+    console.log(`CONFIRM INVITE STATE: ${this.state}`);
 
     return (
       <div id="confirmInviteBody" className="text-center">
-        { inviteSucceeded ? passwordDiv : emailCodeDiv }
+        {inviteSucceeded ? passwordDiv : emailCodeDiv}
       </div>
     );
   }

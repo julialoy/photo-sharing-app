@@ -70,6 +70,15 @@ body.modal-open {
   margin-left: 1em;
 }
 
+#photo-modal-caption {
+  margin-top: 1em;
+}
+
+#user-tag-checkbox {
+  margin-left: .5em;
+  margin-right: .5em;
+}
+
 /** PHOTO STREAM **/
 #main-body {
   padding-right: 1em;

@@ -35,7 +35,7 @@ class Settings extends Component {
   }
 
   handleKeyDown(e) {
-    if (e.keyCode === 27) {
+    if(e.keyCode === 27) {
       this.handleSettingsModalClose();
     }
   }
@@ -67,7 +67,7 @@ class Settings extends Component {
     const firstName = this.state.newPersonFN;
     const lastName = this.state.newPersonLN;
 
-    if (firstName.length === 0 && lastName.length === 0) {
+    if(firstName.length === 0 && lastName.length === 0) {
       this.setState({
         prsnErrorMsg: "Please provide a name."
       });
@@ -83,7 +83,7 @@ class Settings extends Component {
       )
       .then(response => {
         console.log("ADD PERSON RESPONSE: ", response.data);
-        if (response.data.person_added) {
+        if(response.data.person_added) {
           this.setState({
             prsnSuccessMsg: `${firstName} ${lastName} added!`
           });
@@ -102,11 +102,11 @@ class Settings extends Component {
     const inviteEmail = this.state.inviteEmail;
     let accessLevel = this.state.inviteEmail;
 
-    if (accessLevel === "") {
+    if(accessLevel === "") {
       accessLevel = "Friend/Family";
     }
 
-    if (inviteEmail === "") {
+    if(inviteEmail === "") {
       this.setState({
         errorMsg: "Invalid email provided. Cannot send invite."
       });
@@ -122,7 +122,7 @@ class Settings extends Component {
       )
       .then(response => {
         console.log("INVITE RESPONSE: ", response.data);
-        if (response.data.invite_sent) {
+        if(response.data.invite_sent) {
           this.setState({
             successMsg: `Success! Use this code to invite your family or friend: ${response.data.invite_code}.`,
             inviteCode: response.data.invite_code
@@ -192,15 +192,15 @@ class Settings extends Component {
 
     console.log("SETTINGS CURRENT USER: ", currentUser);
 
-    if (!isAuthed) {
+    if(!isAuthed) {
       this.handleLoginRedirect();
     }
 
-    if (show) {
+    if(show) {
       window.addEventListener('keydown', this.handleKeyDown);
     }
 
-    if (!show) {
+    if(!show) {
       return null;
     }
 
@@ -249,7 +249,7 @@ class Settings extends Component {
           </div>    
         </div>
       </div>
-    )
+    );
   }
 }
 

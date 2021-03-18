@@ -30,7 +30,7 @@ class Register extends Component {
       password,
       passwordConfirmation
     } = this.state; 
-    if (password === passwordConfirmation) {
+    if(password === passwordConfirmation) {
       axios.post("http://localhost:8080/register",
         {
           user: {
@@ -38,20 +38,20 @@ class Register extends Component {
             password: password
           }
         },
-        { withCredentials: true }
+        {withCredentials: true}
       )
       .then(response => {
-        if (response.data.is_registered) {
+        if(response.data.is_registered) {
           this.props.handleSuccessfulAuth(response.data);
           this.handleIndexRedirect();
           console.log(response.data);  
-        } else if (response.data.error) {
-          console.log("else if", response.data.error)
+        } else if(response.data.error) {
+          console.log(`else if ${response.data.error}`);
           this.setState({
             registrationErrors: response.data.error
           });
         } else {
-          console.log("else", response.data)
+          console.log(`else ${response.data}`);
         }
       })
       .catch(err => console.log(err));
@@ -80,18 +80,22 @@ class Register extends Component {
   
   render() {
     const errorDiv = <div className="alert alert-danger alert-dismissible fade show" role="alert">
-        {this.state.registrationErrors}
-        <button type="button" className="close" data-dissmiss="alert" aria-label="Close" onClick={this.handleCloseErrorMsg}>
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
+      {this.state.registrationErrors}
+      <button type="button" className="close" data-dissmiss="alert" aria-label="Close" onClick={this.handleCloseErrorMsg}>
+        <span aria-hidden="true">
+          &times;
+        </span>
+      </button>
+    </div>;
 
     return (
       <div id="registerBody" className="text-center">
         <form id="registerForm" className="form-register" onSubmit={this.handleSubmit}>
           <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="72" height="72" />
           {this.state.registrationErrors ? errorDiv : null}
-          <label htmlFor="inputEmail" className="sr-only">Email address</label>
+          <label htmlFor="inputEmail" className="sr-only">
+            Email address
+          </label>
           <input 
             id="inputEmail"
             className="form-control"
@@ -103,7 +107,9 @@ class Register extends Component {
             required 
             autoFocus  
           />
-          <label htmlFor="inputPassword" className="sr-only">Password</label>
+          <label htmlFor="inputPassword" className="sr-only">
+            Password
+          </label>
           <input 
             id="inputPassword"
             className="form-control"
@@ -124,11 +130,15 @@ class Register extends Component {
             onChange={this.handleChange}
             required
           />
-          <button id="registerSubmit" className="btn btn-lg btn-dark btn-block" type="submit">Register</button>
-          <p>Already have an account? <a href="/login">Log in.</a></p>
+          <button id="registerSubmit" className="btn btn-lg btn-dark btn-block" type="submit">
+            Register
+          </button>
+          <p>
+            Already have an account? <a href="/login">Log in.</a>
+          </p>
         </form>
       </div>
-    )
+    );
   }
 }
 

@@ -217,7 +217,7 @@ def fix_image_orientation(im):
 
     exif_orientation_tag = 0x0112
     exif_transpose_sequences = [                   # Val  0th row  0th col
-        [],                                        #  0    (reserved)
+        [],                                        #  0   (reserved)
         [],                                        #  1   top      left
         [Image.FLIP_LEFT_RIGHT],                   #  2   top      right
         [Image.ROTATE_180],                        #  3   bottom   right
@@ -437,9 +437,9 @@ async def logout_handler(request: web.Request) -> web.json_response:
 @router.post("/edit")
 @require_login
 async def edit_handler(request: web.Request) -> web.json_response:
-    data = {"edit_successful": False, "warnings": [], "error": None}
+    data = {'edit_successful': False, 'warnings': [], 'error': None}
     session = await get_session(request)
-    current_user = session.get("user_id")
+    current_user = session.get('user_id')
     edited_data = await json_handler(request)
     db = request.app['db']
     db.dispose()
@@ -450,7 +450,7 @@ async def edit_handler(request: web.Request) -> web.json_response:
     new_tag_list = edited_data['photo']['newTags']
 
     if "T" in edited_data['photo']['currDate']:
-        orig_date = edited_data['photo']['currDate'].split("T")[0]
+        orig_date = edited_data['photo']['currDate'].split('T')[0]
     else:
         orig_date = edited_data['photo']['currDate']
 
@@ -486,11 +486,11 @@ async def edit_handler(request: web.Request) -> web.json_response:
 
     try:
         with db.connect() as conn:
-            date_update = (images.update().
-                           where(and_(images.c.user_id == current_user,
-                                      images.c.filename == filename,
-                                      images.c.id == photo_id)).
-                           values(date_taken=new_date, description=new_desc))
+            date_update = (images.update()
+                           .where(and_(images.c.user_id == current_user,
+                                       images.c.filename == filename,
+                                       images.c.id == photo_id))
+                           .values(date_taken=new_date, description=new_desc))
             conn.execute(date_update)
 
             # Add any new person tags
@@ -533,7 +533,7 @@ async def edit_handler(request: web.Request) -> web.json_response:
     except exc.SQLAlchemyError as err:
         print(f"{err}")
         data['edit_successful'] = False
-        data['error'] = f"{err}"
+        data['error'] = "Unable to save tags"
 
     print(f"Returning data {data}")
     return web.json_response(data)
@@ -542,9 +542,9 @@ async def edit_handler(request: web.Request) -> web.json_response:
 @router.post("/add-person")
 @require_login
 async def add_person_handler(request: web.Request) -> web.json_response:
-    data = {"person_added": False, "error": None}
+    data = {'person_added': False, 'current_tags': None, 'error': None}
     session = await get_session(request)
-    current_user = session.get("user_id")
+    current_user = session.get('user_id')
     req_data = await json_handler(request)
     new_first_name = req_data['newPerson']['first']
     new_last_name = req_data['newPerson']['last']
@@ -567,9 +567,47 @@ async def add_person_handler(request: web.Request) -> web.json_response:
 
             data['person_added'] = True
             data['error'] = None
+            data['current_tags'] = await retrieve_people_tags(request.app, current_user)
+            print(f"NEW PERSON CURRENT TAGS: {data['current_tags']}")
     except exc.SQLAlchemyError as err:
         print(f"DATABASE ERROR: {err}")
-        data['error'] = "Unable to save new person."
+        data['error'] = "Unable to save new person"
+
+    return web.json_response(data)
+
+
+@router.post("/delete-tag")
+@require_login
+async def delete_tag_handler(request: web.Request) -> web.json_response:
+    data = {'success': False, 'current_tags': None, 'error': None}
+    session = await get_session(request)
+    current_user = session.get("user_id")
+    raw_tag_data = await json_handler(request)
+    tag_lst = raw_tag_data['deleteTags']
+    db = request.app['db']
+    db.dispose()
+
+    print(f"TAG TO DEL LIST: {tag_lst}")
+
+    if len(tag_lst) == 0:
+        data['success'] = False
+        data['error'] = "No tag to delete."
+        data['current_tags'] = None
+    else:
+        try:
+            with db.connect() as conn:
+                for tag in tag_lst:
+                    tag_delete_stmt = (people_to_user_relationships.delete()
+                                       .where(and_(people_to_user_relationships.c.person_id == tag,
+                                                   people_to_user_relationships.c.linked_to == current_user)))
+                    conn.execute(tag_delete_stmt)
+            data['success'] = True
+            data['current_tags'] = await retrieve_people_tags(request.app, current_user)
+        except exc.SQLAlchemyError as err:
+            print(f"Unable to complete delete: {err}")
+            data['error'] = "Unable to delete tag."
+
+        print(f"DELETE TAG DATA: {data}")
 
     return web.json_response(data)
 
@@ -577,7 +615,7 @@ async def add_person_handler(request: web.Request) -> web.json_response:
 @router.post("/invite")
 @require_login
 async def invite_handler(request: web.Request) -> web.json_response:
-    data = {"invite_sent": False, "invite_code": None, "error": None}
+    data = {'invite_sent': False, 'invite_code': None, 'error': None}
     session = await get_session(request)
     current_user = session.get("user_id")
     req_data = await json_handler(request)
@@ -610,7 +648,7 @@ async def invite_handler(request: web.Request) -> web.json_response:
             data['invite_code'] = invite_code
     except exc.SQLAlchemyError as err:
         print(f"DATABASE ERROR: {err}")
-        data['error'] = "Unable to complete invite."
+        data['error'] = "Unable to complete invite"
 
     # Send invite email
     # try:
@@ -629,11 +667,11 @@ async def invite_handler(request: web.Request) -> web.json_response:
 @router.post("/register-invite")
 async def register_invite_handler(request: web.Request) -> web.json_response:
     # print(f"REGISTER THE INVITE")
-    data = {"invite_redeemed": False, "error": None, "username": None, "user_id": None, "user_access_level": None}
+    data = {'invite_redeemed': False, 'error': None, 'username': None, 'user_id': None, 'user_access_level': None}
     session = await new_session(request)
     invite_confirm_data = await json_handler(request)
-    invitee_email = invite_confirm_data["inviteInfo"]["email"]
-    invitee_code = invite_confirm_data["inviteInfo"]["code"]
+    invitee_email = invite_confirm_data['inviteInfo']['email']
+    invitee_code = invite_confirm_data['inviteInfo']['code']
     invitee_access_level = None
     invited_by = None
     invitee_key = None
@@ -708,11 +746,11 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
 @router.post("/reset-password")
 @require_login
 async def reset_password_handler(request: web.Request) -> web.json_response:
-    data = {"password_reset_successful": False, "error": None}
+    data = {'password_reset_successful': False, 'error': None}
     session = await get_session(request)
     password_data = await json_handler(request)
-    new_password = password_data["user"]["password"]
-    current_user_id = session.get("user_id")
+    new_password = password_data['user']['password']
+    current_user_id = session.get('user_id')
     db = request.app['db']
     db.dispose()
 
@@ -732,9 +770,9 @@ async def reset_password_handler(request: web.Request) -> web.json_response:
 @router.post("/upload")
 @require_login
 async def upload_handler(request: web.Request) -> web.json_response:
-    data = {"upload_successful": False, "warnings": [], "error": None}
+    data = {'upload_successful': False, 'warnings': [], 'error': None}
     session = await get_session(request)
-    current_user = session.get("user_id")
+    current_user = session.get('user_id')
     image_data = await request.post()
     db = request.app['db']
     db.dispose()
@@ -820,19 +858,19 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         creation_year = date_portion.split(':')[0]
                         creation_month = date_portion.split(':')[1]
                         creation_day = date_portion.split(':')[2]
-                        creation_date = creation_year + "-" + creation_month + "-" + creation_day + "T" + time_portion
+                        creation_date = creation_year + '-' + creation_month + '-' + creation_day + 'T' + time_portion
 
                     # Resize for web and save
                     orig_size = img.size
                     width_percent = (300/float(orig_size[0]))
                     new_height = int((float(orig_size[1]) * float(width_percent)))
                     web_resized_img = img.resize((300, new_height))
-                    web_size_filename = "web_" + filename
+                    web_size_filename = 'web_' + filename
                     web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
 
                     # Create thumbnail and save
                     thumb_size = 128, 128
-                    thumb_filename = "thumb_" + filename
+                    thumb_filename = 'thumb_' + filename
                     img.thumbnail(thumb_size)
                     img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
 

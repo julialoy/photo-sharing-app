@@ -2,7 +2,7 @@ import React from 'react';
 
 const ModalMediaElement = (props) => {
   let returnElem;
-  if (props.mediaType === 'mp4') {
+  if(props.mediaType === 'mp4') {
     returnElem = (
       <video controls width="1000">
         <source src={props.fullPhoto} type="video/mp4" />

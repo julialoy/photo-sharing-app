@@ -8,7 +8,7 @@ const ModalCaption = (props) => {
         {props.photoDesc}
       </span>
       <span>
-        {moment(props.photoDate).format("dddd, MMM Do YYYY")}
+        {moment(props.photoDate).format('dddd, MMM Do YYYY')}
       </span>
     </React.Fragment>
   );

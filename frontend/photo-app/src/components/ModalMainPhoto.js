@@ -10,16 +10,17 @@ class ModalMainPhoto extends PureComponent {
   constructor(props) {
     super(props);
 
-    this.state={
+    this.state = {
       editFormToggled: false,
       checkboxes: {},
       editedDate: null,
       editedTitle: null,
       editedDesc: null,
       editedPersonTags: [],
-    }
+    };
 
     this.initializeCheckboxes = this.initializeCheckboxes.bind(this);
+    this.toggleEditBtn = this.toggleEditBtn.bind(this);
     this.handleEditFormToggle = this.handleEditFormToggle.bind(this);
     this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
     this.handleEditFormChange = this.handleEditFormChange.bind(this);
@@ -27,6 +28,7 @@ class ModalMainPhoto extends PureComponent {
     this.handleCloseEditForm = this.handleCloseEditForm.bind(this);
     this.handleEditFormSubmit = this.handleEditFormSubmit.bind(this);
     this.handleModalClose = this.handleModalClose.bind(this);
+    this.handleKeyDown = this.handleKeyDown.bind(this);
   };
 
   initializeCheckboxes() {
@@ -41,12 +43,22 @@ class ModalMainPhoto extends PureComponent {
       )
     });
   }
+
+  toggleEditBtn() {
+    const targetElem = document.getElementById('date-edit-btn');
+    if(targetElem.style.display === 'none') {
+      targetElem.style.display = 'block';
+    } else {
+      targetElem.style.display = 'none';
+    }
+  }
   
   handleEditFormToggle() {
     this.initializeCheckboxes();
     this.setState({
       editFormToggled: true
     });
+    this.toggleEditBtn();
   }
 
   handleCheckboxChange(e) {
@@ -70,9 +82,9 @@ class ModalMainPhoto extends PureComponent {
 
   parseCheckboxChanges() {
     let newActiveTags = [];
-    let availableTags = this.props.peopleTags;
-    for (let x = 0; x < availableTags.length; x++) {
-      if (this.state.checkboxes[availableTags[x].person_first_name]) {
+    const availableTags = this.props.peopleTags;
+    for(let x = 0; x < availableTags.length; x++) {
+      if(this.state.checkboxes[availableTags[x].person_first_name]) {
         newActiveTags.push(availableTags[x].person_id);
       }
     }
@@ -88,6 +100,7 @@ class ModalMainPhoto extends PureComponent {
       editedDesc: null,
       editedPersonTags: []
     });
+    this.toggleEditBtn();
   }
 
   handleEditFormSubmit(e) {
@@ -99,49 +112,63 @@ class ModalMainPhoto extends PureComponent {
   handleModalClose() {
     this.handleCloseEditForm();
     this.props.onClose();
+    window.removeEventListener('keydown', this.handleKeyDown);
+  }
+
+  handleKeyDown(e) {
+    if(e.keyCode === 27) {
+      this.handleModalClose();
+    }
   }
 
   render() {
-    if (!this.props.isOpen) {
+    if(!this.props.photoIsOpen) {
       return null;
     }
 
-    console.log("MODAL STATE", this.state);
+    if(this.props.photoIsOpen) {
+      window.addEventListener('keydown', this.handleKeyDown);
+    }
 
+    console.log(`MODAL STATE ${this.state}`);
     return (
     <div className="modal-backdrop" id="photo-modal-container">
       <div className="modal" display="block" id="photo-modal">
         <div className="modal-header">
-          <h5>{this.props.photoTitle}</h5>
+          <h5>
+            {this.props.photoTitle}
+          </h5>
           <button className="close" onClick={this.handleModalClose}>
-            <span>&times;</span>
+            <span>
+              &times;
+            </span>
           </button>
         </div>
         <div className="modal-body">
-          <div className="text-center mb-2" id="media-element">
+          <div className="text-center" id="media-element">
             <ModalMediaElement 
               mediaType={this.props.mediaType}
               fullPhoto={this.props.fullPhoto}
             />
-            <div className="d-flex-mt-4 justify-content-between" id="photo-modal-caption">
-              {this.props.errorMsg 
-              ? <ModalError 
+            <div className="d-flex justify-content-between" id="photo-modal-caption">
+              {this.props.errorMsg ? 
+              <ModalError 
                 errorMsg={this.props.errorMsg}
                 handleCloseMsg={this.props.handleCloseMsg}
-              />
-              : null}
-              {this.props.successMsg
-              ? <ModalSuccess 
+              /> :
+               null}
+              {this.props.successMsg ? 
+              <ModalSuccess 
                 successMsg={this.props.successMsg}
                 handleCloseMsg={this.props.handleCloseMsg}
-              />
-              : null}
-              {!this.state.editFormToggled
-              ? <ModalCaption
+              /> : 
+              null}
+              {!this.state.editFormToggled ? 
+              <ModalCaption
                 photoDesc={this.props.photoDesc}
                 photoDate={this.props.photoDate}
-              />
-              : <ModalEditForm 
+              /> : 
+              <ModalEditForm 
                 editFormIsOpen={this.state.editFormToggled}
                 photoDesc={this.props.photoDesc}
                 photoDate={this.props.photoDate}
