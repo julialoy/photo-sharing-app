@@ -822,23 +822,29 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 return web.json_response(data)
             else:
                 if image_type == 'mp4':
-                    with open(os.path.join('static/images/', filename), 'wb') as f:
-                        video_contents = image_file.read()
-                        f.write(video_contents)
+                    try:
+                        with open(os.path.join('static/images/', filename), 'wb') as f:
+                            video_contents = image_file.read()
+                            f.write(video_contents)
 
-                    # No exif for video files
-                    vid_creation_date = datetime.datetime.today()
+                        # No exif for video files
+                        vid_creation_date = datetime.datetime.today()
 
-                    with db.connect() as conn:
-                        update_date_stmt = (images.update()
-                                            .where(images.c.filname == filename)
-                                            .values(date_taken=vid_creation_date))
-                        conn.execute(update_date_stmt)
+                        with db.connect() as conn:
+                            update_date_stmt = (images.update()
+                                                .where(images.c.filename == filename)
+                                                .values(date_taken=vid_creation_date))
+                            conn.execute(update_date_stmt)
 
-                    # print(f"creation_date for {filename}: {vid_creation_date}")
-                    data['upload_successful'] = True
+                        # print(f"creation_date for {filename}: {vid_creation_date}")
+                        data['upload_successful'] = True
 
-                    counter += 1
+                        counter += 1
+                    except exc.SQLAlchemyError as err:
+                        data['upload_successful'] = False
+                        data['error'] = err
+                        print(f"Could not save video: {err}")
+                        return web.json_response(data)
                 else:
                     with open(os.path.join('static/images/', filename), 'wb') as f:
                         image_contents = image_file.read()
@@ -874,17 +880,23 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     img.thumbnail(thumb_size)
                     img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
 
-                    with db.connect() as conn:
-                        update_img_stmt = (images.update()
-                                           .where(and_(images.c.user_id == current_user, images.c.filename == filename))
-                                           .values(date_taken=creation_date,
-                                                   web_size_filename=web_size_filename,
-                                                   thumbnail_filename=thumb_filename))
-                        conn.execute(update_img_stmt)
+                    try:
+                        with db.connect() as conn:
+                            update_img_stmt = (images.update()
+                                               .where(and_(images.c.user_id == current_user, images.c.filename == filename))
+                                               .values(date_taken=creation_date,
+                                                       web_size_filename=web_size_filename,
+                                                       thumbnail_filename=thumb_filename))
+                            conn.execute(update_img_stmt)
 
-                    # print(f"creation_date for {filename}: {creation_date}")
-                    data['upload_successful'] = True
+                        # print(f"creation_date for {filename}: {creation_date}")
+                        data['upload_successful'] = True
 
-                    counter += 1
+                        counter += 1
+                    except exc.SQLAlchemyError as err:
+                        data['upload_successful'] = False
+                        data['error'] = err
+                        print(f"Unable to update image date: {err}")
+                        return web.json_response(data)
 
     return web.json_response(data)

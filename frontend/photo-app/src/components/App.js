@@ -11,6 +11,8 @@ class App extends PureComponent {
   constructor(props) {
     super(props);
 
+    // let signal = axios.CancelToken.source();
+    
     this.state = {
       current_user: {
         id: null,
@@ -20,19 +22,23 @@ class App extends PureComponent {
       },
       photos: [],
       havePhotos: false,
+      photosFiltered: false,
+      filteredTags: [],
       peopleTags: []
-    }
+    };
 
+    this.signal = axios.CancelToken.source();
     this.handleSuccessfulAuth = this.handleSuccessfulAuth.bind(this);
     this.checkLoginStatus = this.checkLoginStatus.bind(this);
     this.handleSuccessfulLogOut = this.handleSuccessfulLogOut.bind(this);
     this.retrievePhotos = this.retrievePhotos.bind(this);
     this.handlePhotoDateChange = this.handlePhotoDateChange.bind(this);
     this.handlePeopleTagChange = this.handlePeopleTagChange.bind(this);
+    this.filterPhotos = this.filterPhotos.bind(this);
   }
 
   checkLoginStatus() {
-    axios.get("http://localhost:8080/logged_in", { withCredentials: true })
+    axios.get("http://localhost:8080/logged_in", {withCredentials: true}, {cancelToken: this.signal.token})
     .then(response => {
       if(response.data.is_logged_in && !this.state.current_user.isAuthenticated) {
         this.handleSuccessfulAuth(response.data);
@@ -52,13 +58,13 @@ class App extends PureComponent {
   }
 
   retrievePhotos() {
-    axios.get("http://localhost:8080/", {withCredentials: true})
+    axios.get("http://localhost:8080/", {withCredentials: true}, {cancelToken: this.signal.token})
     .then(data => {
       if(data.data.photos) {
-        console.log(`PHOTOS DATA: ${data.data.photos}`);
+        console.log("PHOTOS DATA: ", data.data.photos);
         if(data.data.photos.length > 0) {
-          this.setState( () => ({
-            photos: data.data.photos,
+          this.setState( prevState => ({
+            photos: prevState.photosFiltered ? this.filterPhotos(prevState.filteredTags, data.data.photos) : data.data.photos,
             havePhotos: true
           }));
         }
@@ -72,6 +78,31 @@ class App extends PureComponent {
       }
     })
     .catch(err => console.log(`ERROR: ${err}`));
+  }
+
+  filterPhotos(tagId, photoArray) {
+    console.log("FILTER PHOTOS TAG IDS: ", tagId);
+    let filteredPhotos = [];
+    for(let i = 0; i < tagId.length; i++) {
+      filteredPhotos = [...photoArray.filter(p => p.child_id.includes(tagId[i]))];
+    }
+    console.log("FILTERED PHOTOS: ", filteredPhotos);
+    this.handleFilterPhotos(tagId);
+    return filteredPhotos;
+  }
+
+  handleFilterPhotos(tagIds) {
+    if(tagIds.length > 0) {
+      this.setState({
+        filteredTags: tagIds,
+        photosFiltered: true
+      });
+    } else {
+      this.setState({
+        filteredTags: [],
+        photosFiltered: false
+      });
+    }
   }
 
   handlePhotoDateChange() {
@@ -99,7 +130,7 @@ class App extends PureComponent {
   handleSuccessfulLogOut(data) {
     this.setState(() => ({
       current_user: {
-        is: null,
+        id: null,
         username: "",
         accessLevel: null,
         isAuthenticated: false
@@ -110,6 +141,14 @@ class App extends PureComponent {
   componentDidMount() {
     this.checkLoginStatus();
   }
+
+  componentWillUnmount() {
+    this.signal.cancel('Cancelling subscriptions');
+  }
+
+  // componentDidUpdate() {
+  //   this.retrievePhotos();
+  // }
 
   render() { 
     return (
@@ -129,6 +168,7 @@ class App extends PureComponent {
                   handlePeopleTagChange={this.handlePeopleTagChange}
                   handleSuccessfulLogOut={this.handleSuccessfulLogOut}
                   retrievePhotos={this.retrievePhotos}
+                  filterPhotos={this.filterPhotos}
                   handlePhotoDateChange={this.handlePhotoDateChange}
                 />
               )}

@@ -29,7 +29,7 @@ class ModalMainPhoto extends PureComponent {
     this.handleEditFormSubmit = this.handleEditFormSubmit.bind(this);
     this.handleModalClose = this.handleModalClose.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
-  };
+  }
 
   initializeCheckboxes() {
     const firstNames = this.props.peopleTags.map(tag => tag.person_first_name);
@@ -54,11 +54,14 @@ class ModalMainPhoto extends PureComponent {
   }
   
   handleEditFormToggle() {
-    this.initializeCheckboxes();
-    this.setState({
-      editFormToggled: true
-    });
-    this.toggleEditBtn();
+    console.log(this.props.photoDesc);
+    if(this.props.currentUser.accessLevel === "primary") {
+      this.initializeCheckboxes();
+      this.setState({
+        editFormToggled: true
+      });
+      this.toggleEditBtn();
+    }
   }
 
   handleCheckboxChange(e) {
@@ -100,7 +103,10 @@ class ModalMainPhoto extends PureComponent {
       editedDesc: null,
       editedPersonTags: []
     });
-    this.toggleEditBtn();
+    if(this.props.currentUser.accessLevel === "primary") {
+      this.toggleEditBtn();
+    }
+    console.log(this.props.photoDesc);
   }
 
   handleEditFormSubmit(e) {
@@ -122,6 +128,8 @@ class ModalMainPhoto extends PureComponent {
   }
 
   render() {
+    const editButton = <button className="close" type="button" onClick={this.handleEditFormToggle} id="date-edit-btn"><span><FontAwesomeIcon icon="edit" /></span></button>;
+
     if(!this.props.photoIsOpen) {
       return null;
     }
@@ -130,7 +138,7 @@ class ModalMainPhoto extends PureComponent {
       window.addEventListener('keydown', this.handleKeyDown);
     }
 
-    console.log(`MODAL STATE ${this.state}`);
+    console.log("MODAL STATE: ", this.state);
     return (
     <div className="modal-backdrop" id="photo-modal-container">
       <div className="modal" display="block" id="photo-modal">
@@ -168,7 +176,7 @@ class ModalMainPhoto extends PureComponent {
                 photoDesc={this.props.photoDesc}
                 photoDate={this.props.photoDate}
               /> : 
-              <ModalEditForm 
+              <ModalEditForm
                 editFormIsOpen={this.state.editFormToggled}
                 photoDesc={this.props.photoDesc}
                 photoDate={this.props.photoDate}
@@ -181,11 +189,7 @@ class ModalMainPhoto extends PureComponent {
                 handleSubmit={this.handleEditFormSubmit}
                 handleFormClose={this.handleCloseEditForm}
               />}
-              <button className="close" type="button" onClick={this.handleEditFormToggle} id="date-edit-btn">
-                <span>
-                  <FontAwesomeIcon icon="edit" />
-                </span>
-              </button>
+              {this.props.currentUser.accessLevel === "primary" ? editButton : null}
             </div>
           </div>
         </div>

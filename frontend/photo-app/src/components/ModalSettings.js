@@ -22,6 +22,7 @@ class ModalSettings extends PureComponent {
       checkboxes: {}
     };
 
+    this.signal = axios.CancelToken.source();
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.handleCloseSettings = this.handleCloseSettings.bind(this);
@@ -37,6 +38,7 @@ class ModalSettings extends PureComponent {
     this.handleCheckboxChange = this.handleCheckboxChange.bind(this);
     this.parseCheckboxChanges = this.parseCheckboxChanges.bind(this);
     this.handleTagFormSubmit = this.handleTagFormSubmit.bind(this);
+    this.handleFilterPhotos = this.handleFilterPhotos.bind(this);
   }
 
   handleLoginRedirect() {
@@ -96,7 +98,8 @@ class ModalSettings extends PureComponent {
             last: lastName
           }
         },
-        {withCredentials: true}
+        {withCredentials: true},
+        {cancelToken: this.signal.token}
       )
       .then(response => {
         console.log(`ADD PERSON RESPONSE: ${response.data}`);
@@ -140,7 +143,8 @@ class ModalSettings extends PureComponent {
           accessLevel: this.state.accessLevel
         } 
         },
-        {withCredentials: true}
+        {withCredentials: true},
+        {cancelToken: this.signal.token}
       )
       .then(response => {
         console.log(`INVITE RESPONSE: ${response.data}`);
@@ -212,14 +216,14 @@ class ModalSettings extends PureComponent {
   }
 
   parseCheckboxChanges() {
-    let deleteTags = [];
+    let checkedTags = [];
     const availableTags = this.props.peopleTags;
     for(let x = 0; x < availableTags.length; x++) {
       if(this.state.checkboxes[availableTags[x].person_first_name]) {
-        deleteTags.push(availableTags[x].person_id);
+        checkedTags.push(availableTags[x].person_id);
       }
     }
-    return deleteTags;
+    return checkedTags;
   }
 
   // Check  that response needs to include tags?
@@ -231,7 +235,8 @@ class ModalSettings extends PureComponent {
     if(tagsToDelete) {
       axios.post("http://localhost:8080/delete-tag",
         {deleteTags: tagsToDelete},
-        {withCredentials: true}
+        {withCredentials: true},
+        {cancelToken: this.signal.token}
       )
       .then(response => {
         if(response.data.success) {
@@ -254,13 +259,46 @@ class ModalSettings extends PureComponent {
     } 
   }
 
+  handleFilterPhotos() {
+    const tagsToFilter = this.parseCheckboxChanges();
+    this.props.filterPhotos(tagsToFilter);
+  }
+
   componentDidMount() {
     this.initializeCheckboxes(this.props.peopleTags);
   }
 
+  componentWillUnmount() {
+    this.signal.cancel('Cancelling subscriptions');
+  }
+
   render() {
     const {settIsOpen, isAuthed, currentUser} = this.props;
-    
+    const addTagForm = <form>
+        <div className="form-group">
+          <label htmlFor="newPersonFN">First name</label>
+          <input type="text" className="form-control" id="newPersonFN" name="newPersonFN" onChange={this.handleFormChange} value={this.state.newPersonFN} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="newPersonLN">Last name</label>
+          <input type="text" className="form-control" id="newPersonLN" name="newPersonLN" onChange={this.handleFormChange} value={this.state.newPersonLN} />
+        </div>
+        <button className="btn btn-dark" type="submit" onClick={this.handleNewPerson}>Add</button>
+      </form>;
+    const inviteForm = <form>
+        <div className="form-group">
+          <label htmlFor="inviteFormEmail">Email address</label>
+          <input type="email" className="form-control" id="inviteFormEmail" name="inviteEmail" placeholder="name@example.com" onChange={this.handleFormChange} value={this.state.inviteEmail} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="inviteFormAccessLevel">Access level</label>
+          <select className="form-control" id="inviteFormAcccessLevel" name="accessLevel" onChange={this.handleFormChange}>
+            <option>Friend/Family</option>
+            <option>Collaborator</option>
+          </select>
+        </div>
+        <button className="btn btn-dark" type="submit" onClick={this.handleNewUserInvite}>Invite</button>
+      </form>;
 
     console.log("SETTINGS CURRENT USER: ", currentUser);
 
@@ -294,8 +332,10 @@ class ModalSettings extends PureComponent {
               checkboxes={this.state.checkboxes}
               onChange={this.handleCheckboxChange}
               onSubmit={this.handleTagFormSubmit}
+              onClick={this.handleFilterPhotos}
+              userAccessLevel={currentUser.accessLevel}
             />
-            <h5>Add people</h5>
+            {currentUser.accessLevel === "primary" ? <h5>Add people</h5> : null}
             {this.state.prsnErrorMsg ? 
             <ModalError 
               errorMsg={this.state.prsnErrorMsg}
@@ -308,18 +348,8 @@ class ModalSettings extends PureComponent {
               handleCloseMsg={this.handleClosePrsnMsg}
             /> : 
             null}
-            <form>
-              <div className="form-group">
-                <label htmlFor="newPersonFN">First name</label>
-                <input type="text" className="form-control" id="newPersonFN" name="newPersonFN" onChange={this.handleFormChange} value={this.state.newPersonFN} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="newPersonLN">Last name</label>
-                <input type="text" className="form-control" id="newPersonLN" name="newPersonLN" onChange={this.handleFormChange} value={this.state.newPersonLN} />
-              </div>
-              <button className="btn btn-dark" type="submit" onClick={this.handleNewPerson}>Add</button>
-            </form>
-            <h5 className="mt-3">Send invites</h5>
+            {currentUser.accessLevel === "primary" ? addTagForm : null}
+            {currentUser.accessLevel === "primary" ? <h5 className="mt-3">Send invites</h5> : null}
             {this.state.errorMsg ? 
             <ModalError 
               errorMsg={this.state.errorMsg}
@@ -332,20 +362,7 @@ class ModalSettings extends PureComponent {
               handleCloseMsg={this.handleCloseMsg}
             /> : 
             null}
-            <form>
-              <div className="form-group">
-                <label htmlFor="inviteFormEmail">Email address</label>
-                <input type="email" className="form-control" id="inviteFormEmail" name="inviteEmail" placeholder="name@example.com" onChange={this.handleFormChange} value={this.state.inviteEmail} />
-              </div>
-              <div className="form-group">
-                <label htmlFor="inviteFormAccessLevel">Access level</label>
-                <select className="form-control" id="inviteFormAcccessLevel" name="accessLevel" onChange={this.handleFormChange}>
-                  <option>Friend/Family</option>
-                  <option>Collaborator</option>
-                </select>
-              </div>
-              <button className="btn btn-dark" type="submit" onClick={this.handleNewUserInvite}>Invite</button>
-            </form>
+            {currentUser.accessLevel === "primary" ? inviteForm : null}
           </div>    
         </div>
       </div>

@@ -30,6 +30,7 @@ class Home extends PureComponent {
       }
     };
 
+    this.signal = axios.CancelToken.source();
     this.handleLoginRedirect = this.handleLoginRedirect.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
     this.handleRetrievePhotos = this.handleRetrievePhotos.bind(this);
@@ -42,6 +43,7 @@ class Home extends PureComponent {
     // this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
     this.handlePhotoDataSubmit = this.handlePhotoDataSubmit.bind(this);
     this.handleCloseModalMsg = this.handleCloseModalMsg.bind(this);
+    this.handleFilterPhotosRequest = this.handleFilterPhotosRequest.bind(this);
   }
 
   static propTypes = {
@@ -55,8 +57,15 @@ class Home extends PureComponent {
     showFullSize: PropTypes.func
   };
 
+  handleFilterPhotosRequest(tagIdArray) {
+    const photoDataArray = this.props.photos;
+    this.props.filterPhotos(tagIdArray, photoDataArray);
+    this.handleModalClose();
+  }
+
   handlePhotoDataSubmit(evt, editedDate, editedDesc, editedTags) {
       evt.preventDefault();
+      console.log("HANDLE PHOTO DATA SUBMIT INITIAL DATA: ", editedDate, editedDesc, editedTags);
       let validSave = true;
 
       if(editedDate === null) {
@@ -88,7 +97,8 @@ class Home extends PureComponent {
             newTags: editedTags
           }
         },
-        {withCredentials: true}
+        {withCredentials: true},
+        {cancelToken: this.signal.token}
         )
         .then(response => {
           if(response.data.edit_successful) {
@@ -139,7 +149,8 @@ class Home extends PureComponent {
           username: this.props.currentUser
         }
       },
-      {withCredentials: true}
+      {withCredentials: true},
+      {cancelToken: this.signal.token}
       )
       .then(response => {
         if(response.data.log_out_successful) {
@@ -256,11 +267,18 @@ class Home extends PureComponent {
     this.handleRetrievePhotos();
   }
 
+  componentWillUnmount() {
+    this.signal.cancel('Cancelling subscriptions');
+  }
+
   render() {
     const {
       isAuthed,
       currentUser,
     } = this.props;
+
+    const uploadButton = <li className="nav-item"><Link to="/" className="nav-link" onClick={this.showUploadModal}>Upload</Link></li>;
+
 
     // This creates a warning about not updating during an existing state transition
     if(!isAuthed) {
@@ -295,23 +313,16 @@ class Home extends PureComponent {
                 id="navbarSupportedContent"
               >
                 <ul className="navbar-nav mr-auto">
-                  <li className="nav-item">
+                  {/* <li className="nav-item">
                       <a 
                         href="/filter" 
                         className="nav-link"
                       >
                         Filter
                       </a>
-                    </li>
-                    <li className="nav-item">
-                      <Link 
-                        to="/" 
-                        className="nav-link"
-                        onClick={this.showUploadModal}
-                      >
-                        Upload
-                      </Link>
-                    </li>
+                    </li> */}
+                    {currentUser.accessLevel === "primary" ? uploadButton : null}
+
 {/*                     <li className="nav-item">
                       <Link 
                         to="/activity" 
@@ -381,6 +392,7 @@ class Home extends PureComponent {
           errorMsg={this.state.photoModal.errorMsg}
           handleCloseMsg={this.handleCloseModalMsg}
           handlePeopleTagChange={this.props.handlePeopleTagChange}
+          filterPhotos={this.handleFilterPhotosRequest}
         /> 
         {this.props.havePhotos ? 
           <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : 

@@ -5,7 +5,8 @@ const createCheckboxes = (props) => {
   return (
     props.peopleTags.map(tag => 
       <Checkbox 
-        label={tag.person_first_name} 
+        label={tag.person_first_name}
+        value={tag.person_first_name} 
         isSelected={props.checkboxes[tag.person_first_name]} 
         key={`${tag.person_first_name }-checkbox-key`}
         onChange={props.handleCheckboxChange}

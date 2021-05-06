@@ -73,7 +73,6 @@ invites = Table(
     Column('access_level', String, nullable=False),
 )
 
-# user_to_user table unused
 user_to_user_relationships = Table(
     'user_to_user_relationships', meta,
 
