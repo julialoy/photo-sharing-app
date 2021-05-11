@@ -35,6 +35,7 @@ class App extends PureComponent {
     this.handlePhotoDateChange = this.handlePhotoDateChange.bind(this);
     this.handlePeopleTagChange = this.handlePeopleTagChange.bind(this);
     this.filterPhotos = this.filterPhotos.bind(this);
+    this.resetFilter = this.resetFilter.bind(this);
   }
 
   checkLoginStatus() {
@@ -61,7 +62,7 @@ class App extends PureComponent {
     axios.get("http://localhost:8080/", {withCredentials: true}, {cancelToken: this.signal.token})
     .then(data => {
       if(data.data.photos) {
-        console.log("PHOTOS DATA: ", data.data.photos);
+        // console.log("PHOTOS DATA: ", data.data.photos);
         if(data.data.photos.length > 0) {
           this.setState( prevState => ({
             photos: prevState.photosFiltered ? this.filterPhotos(prevState.filteredTags, data.data.photos) : data.data.photos,
@@ -81,12 +82,18 @@ class App extends PureComponent {
   }
 
   filterPhotos(tagId, photoArray) {
-    console.log("FILTER PHOTOS TAG IDS: ", tagId);
     let filteredPhotos = [];
     for(let i = 0; i < tagId.length; i++) {
-      filteredPhotos = [...photoArray.filter(p => p.child_id.includes(tagId[i]))];
-    }
-    console.log("FILTERED PHOTOS: ", filteredPhotos);
+      console.log("FILTER TAG ", i);
+      // Not using filter/arrow function to avoid error/potential memory leak
+      let selectedPhotos = [];
+      for(let p = 0; p < photoArray.length; p++) {
+        if(photoArray[p].child_id.includes(tagId[i]) && !filteredPhotos.includes(photoArray[p])) {
+          selectedPhotos.push(photoArray[p]);
+        }
+      }
+      filteredPhotos = filteredPhotos.concat(selectedPhotos);
+    };
     this.handleFilterPhotos(tagId);
     return filteredPhotos;
   }
@@ -96,7 +103,7 @@ class App extends PureComponent {
       this.setState({
         filteredTags: tagIds,
         photosFiltered: true
-      });
+      }, () => console.log(this.state.filteredTags));
     } else {
       this.setState({
         filteredTags: [],
@@ -105,14 +112,21 @@ class App extends PureComponent {
     }
   }
 
+  resetFilter() {
+    this.setState({
+      filteredTags: [],
+      photosFiltered: false
+    });
+  }
+
   handlePhotoDateChange() {
     this.retrievePhotos();
   }
 
   handlePeopleTagChange() {
-    console.log("PEOPLE TAG CHANGE HANDLER");
+    // console.log("PEOPLE TAG CHANGE HANDLER");
     this.retrievePhotos();
-    console.log("STATE AFTER HANDLE TAG CHANGE: ", this.state.peopleTags);
+    // console.log("STATE AFTER HANDLE TAG CHANGE: ", this.state.peopleTags);
   }
 
   handleSuccessfulAuth(data) {
@@ -169,7 +183,9 @@ class App extends PureComponent {
                   handleSuccessfulLogOut={this.handleSuccessfulLogOut}
                   retrievePhotos={this.retrievePhotos}
                   filterPhotos={this.filterPhotos}
+                  filteredTags={this.state.filteredTags}
                   handlePhotoDateChange={this.handlePhotoDateChange}
+                  resetFilter={this.resetFilter}
                 />
               )}
             />

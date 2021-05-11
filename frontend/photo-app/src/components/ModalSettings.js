@@ -39,6 +39,7 @@ class ModalSettings extends PureComponent {
     this.parseCheckboxChanges = this.parseCheckboxChanges.bind(this);
     this.handleTagFormSubmit = this.handleTagFormSubmit.bind(this);
     this.handleFilterPhotos = this.handleFilterPhotos.bind(this);
+    this.handleResetFilter = this.handleResetFilter.bind(this);
   }
 
   handleLoginRedirect() {
@@ -68,6 +69,7 @@ class ModalSettings extends PureComponent {
   }
 
   handleModalClose() {
+    console.log("CLOSE THE MODAL");
     this.handleCloseSettings();
     this.props.onClose();
     window.removeEventListener('keydown', this.handleKeyDown);
@@ -216,6 +218,7 @@ class ModalSettings extends PureComponent {
   }
 
   parseCheckboxChanges() {
+    console.log("PARSING CHECKBOXES");
     let checkedTags = [];
     const availableTags = this.props.peopleTags;
     for(let x = 0; x < availableTags.length; x++) {
@@ -261,7 +264,14 @@ class ModalSettings extends PureComponent {
 
   handleFilterPhotos() {
     const tagsToFilter = this.parseCheckboxChanges();
+    console.log("HANDLE FILTER PHOTOS: ", tagsToFilter);
     this.props.filterPhotos(tagsToFilter);
+    this.handleModalClose();
+  }
+
+  handleResetFilter() {
+    this.props.resetFilter();
+    this.handleModalClose();
   }
 
   componentDidMount() {
@@ -329,11 +339,13 @@ class ModalSettings extends PureComponent {
             <h5>People</h5>
             <ModalTagForm
               peopleTags={this.state.newPeopleTags ? this.state.newPeopleTags : this.props.peopleTags}
+              filteredTags={this.props.filteredTags}
               checkboxes={this.state.checkboxes}
               onChange={this.handleCheckboxChange}
               onSubmit={this.handleTagFormSubmit}
               onClick={this.handleFilterPhotos}
               userAccessLevel={currentUser.accessLevel}
+              handleResetFilter={this.handleResetFilter}
             />
             {currentUser.accessLevel === "primary" ? <h5>Add people</h5> : null}
             {this.state.prsnErrorMsg ? 

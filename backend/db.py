@@ -123,8 +123,8 @@ async def init_pg(app: web.Application) -> None:
 
 async def close_pg(app: web.Application) -> None:
     print(f"CLOSE_PG")
-    app['db'].close()
-    await app['db'].wait_closed()
+    # app['db'].close()
+    # await app['db'].wait_closed()
     del app['db']
 
 

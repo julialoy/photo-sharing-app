@@ -111,7 +111,7 @@ class ModalUpload extends Component {
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
           });
-          console.log("ERROR UPLOADING: ", response.data.error);
+          // console.log("ERROR UPLOADING: ", response.data.error);
         } else if(response.data.upload_successful) {
           this.props.handlePhotoUpload(true);
           this.setState({
@@ -135,14 +135,14 @@ class ModalUpload extends Component {
       let fileExtension = filesArray[x].fileName.split('.')[1];
       if(fileExtension === 'mp4') {
         uploadArray.push(
-          <span className="upload-thumb-container">
+          <span key={`${filesArray[x].fileName}-span`} className="upload-thumb-container">
             <video className="video-thumb" key={`${filesArray[x].fileName}-video`}>
               <source className="video-thumb-source" key={filesArray[x].fileData} type="video/mp4" src={filesArray[x].preview} />
             </video>
           </span>
         );
       } else {
-        uploadArray.push(<span className="upload-thumb-container"><img key={filesArray[x].fileName} className="upload-thumb" src={filesArray[x].preview} alt="" /></span>);
+        uploadArray.push(<span key={`${filesArray[x].fileName}-span`} className="upload-thumb-container"><img key={filesArray[x].fileName} className="upload-thumb" src={filesArray[x].preview} alt="" /></span>);
       }
     }
     return uploadArray;
@@ -193,9 +193,7 @@ class ModalUpload extends Component {
                     <div {...getRootProps({ className: "dropzone" })}>
                       <input {...getInputProps()} />
                       <p>Drag and drop files to upload</p>
-                      {/* <p className="upload-para">  */}
                         {this.handleThumbRender(this.state.files)}
-                      {/* </p> */}
                     </div>
                   </div>
                 )}
@@ -204,7 +202,7 @@ class ModalUpload extends Component {
                 <strong>Files:</strong>
                 <ul id="thumb-list">
                   {this.state.files.map(file => (
-                    <li key={file.fileName}>
+                    <li key={file.fileName + "-text"}>
                       {file.fileName} 
                       <button className="close" type="button" key={file.fileName + "-btn"} id="thumb-delete-btn">
                         <span key={file.fileName + "-span"} onClick={() => this.handleRemoveFromDrop({file})}>
@@ -213,7 +211,6 @@ class ModalUpload extends Component {
                       </button>
                     </li>
                   ))}
-                  
                 </ul>
               </div>
             </div>

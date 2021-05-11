@@ -1,7 +1,7 @@
 import React from 'react';
 
 const Checkbox = ({ label, isSelected, onChange }) => {
-  console.log(`CHECKBOX COMPONENT CHECKED? ${isSelected}`);
+  // console.log(`CHECKBOX COMPONENT CHECKED? ${isSelected}`);
   return (
     <div id="user-tag-checkbox">
       <label
@@ -15,7 +15,7 @@ const Checkbox = ({ label, isSelected, onChange }) => {
           value={label}
           name="editedPersonTags"
           onChange={onChange}
-          checked={isSelected}
+          defaultChecked={isSelected}
         />
         {label}
       </label>

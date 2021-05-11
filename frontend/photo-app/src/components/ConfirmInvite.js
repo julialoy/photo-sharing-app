@@ -57,7 +57,7 @@ class ConfirmInvite extends Component {
 
   handleSubmit(evt) {
     evt.preventDefault();
-    console.log("ACCEPT INVITE");
+    // console.log("ACCEPT INVITE");
     const {
       email,
       inviteCode
@@ -74,7 +74,7 @@ class ConfirmInvite extends Component {
     )
     .then(response => {
       if (response.data) {
-        console.log(`INVITE CONFIRMATION DATA: ${response.data}`);
+        // console.log(`INVITE CONFIRMATION DATA: ${response.data}`);
         this.setState({
           inviteSucceeded: true,
           successMsg: "Confirmation succeeded!"
@@ -98,13 +98,13 @@ class ConfirmInvite extends Component {
       )
       .then(response => {
         if (response.data) {
-          console.log("RESPONSE DATA");
+          // console.log("RESPONSE DATA");
           this.setState({
             successMsg: "Password sucessfully reset!"
           });
           setTimeout(this.handleIndexRedirect(), 2000);
         } else {
-          console.log("SOMETHING WENT WRONG");
+          // console.log("SOMETHING WENT WRONG");
           this.setState({
             errorMsg: "Unable to reset password."
           });
@@ -181,7 +181,7 @@ class ConfirmInvite extends Component {
       return <Redirect to="/" />
     } */
 
-    console.log(`CONFIRM INVITE STATE: ${this.state}`);
+    // console.log(`CONFIRM INVITE STATE: ${this.state}`);
 
     return (
       <div id="confirmInviteBody" className="text-center">

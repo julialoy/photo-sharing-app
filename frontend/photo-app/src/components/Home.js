@@ -393,6 +393,8 @@ class Home extends PureComponent {
           handleCloseMsg={this.handleCloseModalMsg}
           handlePeopleTagChange={this.props.handlePeopleTagChange}
           filterPhotos={this.handleFilterPhotosRequest}
+          filteredTags={this.props.filteredTags}
+          resetFilter={this.props.resetFilter}
         /> 
         {this.props.havePhotos ? 
           <Year years={this.state.photoYears} photos={this.props.photos} showPhotoModal={this.showPhotoModal} /> : 
