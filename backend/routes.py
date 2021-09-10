@@ -29,7 +29,7 @@ BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
-MY_BUCKET = 'hoardpicsbucket'
+MY_BUCKET = os.environ.get('S3_BUCKET')
 
 
 def require_login(func: _WebHandler) -> _WebHandler:
@@ -103,9 +103,13 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
         with db.connect() as conn:
             for single_id in id_list:
                 results = conn.execute(images.select().where(images.c.user_id == single_id))
-                for res in results:
-                    p = parse_image_data(app, res)[0]
-                    photo_data.append(p)
+                # Only try to parse image data if user has photos available
+                try:
+                    for res in results:
+                        p = parse_image_data(app, res)[0]
+                        photo_data.append(p)
+                except AttributeError as err:
+                    print(f"ERROR PARSING IMAGE DATA: {err}")
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
     print(f"PHOTO DATA: {photo_data}")
