@@ -279,6 +279,8 @@ class Home extends PureComponent {
 
     const uploadButton = <li className="nav-item"><Link to="/" className="nav-link" onClick={this.showUploadModal}>Upload</Link></li>;
 
+    
+    console.log("USER DATA: ", currentUser.accessLevel);
 
     // This creates a warning about not updating during an existing state transition
     if(!isAuthed) {
@@ -355,6 +357,21 @@ class Home extends PureComponent {
           </header>
         </div>
         <div className="container-fluid" id="main-body">
+{/*           <img 
+            className="image-element-class"
+            key={"testImage-key"}
+            // Change to web_size_filename from web_size_loc
+            // src={process.env.PUBLIC_URL + elementArray[x].web_size_filename}
+            src={testImage}
+            alt="test"
+          /> */}
+{/*           <img 
+            className="image-element-class"
+            key={"testImageURL-key"}
+            src={process.env.PUBLIC_URL+"././backend/assets/images/"+"web_PIC_4681.jpg"}
+            alt="test URL"
+          /> */}
+          
         {/* <Upload 
           isAuthed={isAuthed}
           show={this.state.showUploadModal}
@@ -363,7 +380,7 @@ class Home extends PureComponent {
           onClose={this.handleUploadModalClose}
         />
         <Settings 
-          isAuthed={isAuthed}
+          isAuthed={isAuthed}S
           show={this.state.showSettingsModal}
           currentUser={currentUser}
           peopleTags={this.props.peopleTags}

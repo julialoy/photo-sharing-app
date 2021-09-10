@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { withRouter } from "react-router-dom";
 import axios from "axios";
+import logo from './android-chrome-192x192.png';
 
 class ConfirmInvite extends Component {
   constructor(props) {
@@ -136,7 +137,7 @@ class ConfirmInvite extends Component {
       </div>;
 
     const emailCodeDiv = <form id="confirmInviteForm" className="form-signin" onSubmit={this.handleSubmit}>
-          <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="71" height="72" />
+          <img className="mb-4" src={logo} alt="Logo" width="71" height="72" />
           {this.state.errorMsg ? errorDiv : null}
           <h1 className="h4 mb-3 font-weight-normal">
             Please enter your email and invite code
@@ -159,7 +160,7 @@ class ConfirmInvite extends Component {
 
 
     const passwordDiv = <form id="passwordForm" className="form-signin" onSubmit={this.handlePasswordSubmit}>
-          <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="71" height="72" />
+          <img className="mb-4" src={logo} alt="Logo" width="71" height="72" />
           {this.state.successMsg ? successDiv : null}
           <h1 className="h4 mb-3 font-weight-normal">
             Please create your password

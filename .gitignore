@@ -4,6 +4,7 @@
 /backend
 *.yaml
 *.txt
+backend.env
 
 # dependencies
 /frontend/photo-app/node_modules

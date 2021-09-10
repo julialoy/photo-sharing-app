@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { withRouter } from 'react-router-dom';
 import axios from 'axios';
+import logo from './android-chrome-192x192.png';
 
 class Register extends Component {
   constructor(props) {
@@ -91,7 +92,7 @@ class Register extends Component {
     return (
       <div id="registerBody" className="text-center">
         <form id="registerForm" className="form-register" onSubmit={this.handleSubmit}>
-          <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="72" height="72" />
+          <img className="mb-4" src={logo} alt="Logo" width="72" height="72" />
           {this.state.registrationErrors ? errorDiv : null}
           <label htmlFor="inputEmail" className="sr-only">
             Email address

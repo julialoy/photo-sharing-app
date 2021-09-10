@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Redirect, withRouter } from "react-router-dom";
 import axios from "axios";
+import logo from './android-chrome-192x192.png';
 
 class Signin extends Component {
   constructor(props) {
@@ -119,7 +120,7 @@ class Signin extends Component {
     return (
       <div id="loginBody" className="text-center">
         <form id="loginForm" className="form-signin" onSubmit={this.handleSubmit}>
-          <img className="mb-4" src="../static/android-chrome-192x192.png" alt="" width="72" height="72"/>
+          <img className="mb-4" src={logo} alt="Logo" width="72" height="72"/>
           <h1 className="h4 mb-3 font-weight-normal">
             Please log in
           </h1>

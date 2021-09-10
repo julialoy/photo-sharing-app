@@ -437,9 +437,10 @@ class PhotoModal extends PureComponent {
       {this.state.editForm.error}
     </div>
 
-    const imgElement = <img className="full-size-photo img-fluid" src={this.props.fullPhoto} alt="" />;
+    const imgElement = <img className="full-size-photo img-fluid" src={process.env.PUBLIC_URL + this.props.photoFilename} alt="Photo" />;
     const videoElement = <video controls width="1000">
-      <source src={this.props.fullPhoto} type="video/mp4"/>
+      
+      <source src={process.env.PUBLIC_URL + this.props.photoFilename} type="video/mp4"/>
       Sorry, your browser doesn't support this video format.
     </video>;
 

@@ -113,7 +113,7 @@ def create_tables(engine):
 async def init_pg(app: web.Application) -> None:
     print(f"INIT_PG")
     db_url = DSN.format(**config['postgres'])
-    engine = create_engine(db_url)
+    engine = create_engine(db_url, pool_pre_ping=True)
     print(f"IN INIT_PG, ENGINE: {engine}")
     create_tables(engine)
     clean_invite_db(engine)

@@ -3,6 +3,7 @@ import datetime
 # from email.message import EmailMessage
 import functools
 import json
+import logging
 import os
 import random
 import string
@@ -15,6 +16,8 @@ from aiohttp_session import setup, get_session, new_session
 # from aiosmtplib import send
 # from aiosmtplib import SMTP
 # from aiosmtplib import SMTPTimeoutError
+import boto3
+from botocore.exceptions import ClientError
 from PIL import Image
 from sqlalchemy import and_, exc, insert, Integer, String
 
@@ -25,6 +28,8 @@ from db import (users, images, invites, albums, people,
 BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+
+MY_BUCKET = 'hoardpicsbucket'
 
 
 def require_login(func: _WebHandler) -> _WebHandler:
@@ -47,7 +52,6 @@ async def retrieve_people_tags(app: web.Application, current_user_id: Integer) -
                 person_query = (people.select().where(people.c.id == person.person_id))
                 person_info = conn.execute(person_query)
                 for p in person_info:
-                    # print(f"PERSON INFO: {p}")
                     new_person = {'person_id': p.id, 'person_first_name': p.first_name, 'person_last_name': p.last_name}
                     people_tag_list.append(new_person)
     except exc.SQLAlchemyError as err:
@@ -94,22 +98,17 @@ async def retrieve_images(app: web.Application, current_user_id: Integer) -> lis
                                   .where(user_to_user_relationships.c.user_id == current_user_id))
         for r_user in related_users:
             id_list.append(r_user[1])
-    # print(f"ID LIST: {id_list}")
 
     try:
         with db.connect() as conn:
             for single_id in id_list:
                 results = conn.execute(images.select().where(images.c.user_id == single_id))
                 for res in results:
-                    # print(f"RESULT: {res}")
-                    # p = parse_image_data(res)[0]
                     p = parse_image_data(app, res)[0]
-                    # print(f"P!: {p}")
                     photo_data.append(p)
     except exc.SQLAlchemyError as err:
         print(f"ERROR ADDING IMAGES FOR {current_user_id} TO PHOTO DATA: {err}")
-
-    # print(f"PHOTO DATA: {photo_data}")
+    print(f"PHOTO DATA: {photo_data}")
     return photo_data
 
 
@@ -120,9 +119,9 @@ def parse_image_data(app: web.Application, db_row) -> list:
     parsed_data = []
     NoneType = type(None)
     photo_id = db_row[0]
-    full_size_loc = '../static/images/' + db_row[4] if len(db_row[4]) >= 1 else ''
-    web_size_loc = '../static/images/' + db_row[5] if type(db_row[5]) is not NoneType else full_size_loc
-    thumb_size_loc = '../static/images/' + db_row[6] if type(db_row[6]) is not NoneType else full_size_loc
+    full_size_loc = '../frontend/photo-app/public/user_images/' + db_row[4] if len(db_row[4]) >= 1 else ''
+    web_size_loc = '../frontend/photo-app/public/user_images/' + db_row[5] if type(db_row[5]) is not NoneType else full_size_loc
+    thumb_size_loc = '../frontend/photo-app/public/user_images/' + db_row[6] if type(db_row[6]) is not NoneType else full_size_loc
     child_ids = []
 
     with db.connect() as conn:
@@ -132,26 +131,15 @@ def parse_image_data(app: web.Application, db_row) -> list:
         query_results = returned_query.fetchall()
 
         for result in query_results:
-            # print(f"RESULT: {result}")
             person_id = result[1]
             people_qry_stmt = (people.select().where(people.c.id == person_id))
             returned_qry = conn.execute(people_qry_stmt)
             qry_results = returned_qry.fetchall()
-            # print(f"QUERY RESULTS FOR {result[0]}:")
             if qry_results is not None:
                 for r in qry_results:
-                    # print(f"R {r}")
                     if r not in child_ids:
-                        # id_data = {'person_id': r[0],
-                        #            'person_first_name': r[1],
-                        #            'person_last_name': r[2]}
                         id_data = r[0]
-                        # print(f"APPEND RESULTS!")
                         child_ids.append(id_data)
-        # for result in query_results:
-        #     print(f"{result} in {child_ids}? {result[1] in child_ids}")
-        #     if result not in child_ids:
-        #         child_ids.append(result)
 
     parsed_data.append({
         'photo_id': photo_id,
@@ -196,6 +184,32 @@ def order_images(parsed_image_array) -> None:
 #                 continue
 #
 #     return image_data
+
+# From Boto3 documentation
+def upload_media(upload_image, file_name, bucket, object_name=None):
+    """Upload a file to an S3 bucket
+
+    :param file_name: File to upload
+    :param bucket: Bucket to upload to
+    :param object_name: S3 object name. If not specified then file_name is used
+    :return: True if file was uploaded, else False
+    """
+
+    print(f"BUCKET NAME: {bucket}")
+
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = os.path.basename(file_name)
+
+    # Upload the file
+    s3_client = boto3.client('s3')
+    try:
+        with open(upload_image, "rb") as f:
+            s3_client.upload_fileobj(f, bucket, object_name)
+    except ClientError as e:
+        logging.error(e)
+        return False
+    return True
 
 
 def fix_image_orientation(im):
@@ -252,8 +266,8 @@ def generate_invite_code() -> str:
 #     message.set_content(message_str)
 #     await send(
 #         message,
-#         hostname="smtp.gmail.com",
-#         port=587,
+#         hostname="",
+#         port=,
 #         start_tls=True,
 #         username="",
 #         password="",
@@ -281,15 +295,11 @@ async def json_handler(self, *, loads=json.loads):
 
 @asyncio.coroutine
 @router.get("/")
-# @require_login
 async def index_handler(request: web.Request) -> web.json_response:
     data = {"photos": None, "tags": None}
     session = await get_session(request)
     username = session.get("username")
-    # print(f"USERNAME: {username}")
-    # print(f"SESSION: {session}")
     user_id = session.get("user_id")
-    # print(f"USER ID: {user_id}")
     db = request.app['db']
     db.dispose()
 
@@ -301,7 +311,6 @@ async def index_handler(request: web.Request) -> web.json_response:
 
     available_photos = await retrieve_images(request.app, user_id)
     order_images(available_photos)
-    # available_photos = await insert_person_tag(request.app, available_photos)
     people_tags = await retrieve_people_tags(request.app, user_id)
     data['photos'] = available_photos
     data['tags'] = people_tags
@@ -311,13 +320,10 @@ async def index_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/login")
 async def login_handler(request: web.Request) -> web.json_response:
-    # print("FIND USER AND LOG IN")
     session = await new_session(request)
     request_json = await json_handler(request)
-    # print(f"TRY TO LOG IN DATA: {request_json}")
     username = request_json['user']['email']
     password = request_json['user']['password']
-    # print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
     db = request.app['db']
     db.dispose()
@@ -328,7 +334,6 @@ async def login_handler(request: web.Request) -> web.json_response:
         selected_user_result = conn.execute(query_stmt)
         for row in selected_user_result:
             selected_user = row
-    # print(f"SELECTED USER: {selected_user}")
 
     if not selected_user:
         print(f"NO USER FOUND {selected_user}")
@@ -347,12 +352,10 @@ async def login_handler(request: web.Request) -> web.json_response:
         session["auth_token"] = auth_token
         session["access_level"] = selected_user[3]
         session["logged_in"] = True
-        # print(f"LOGIN DATA: {data}")
         with db.connect() as conn:
             update_stmt = users.update().where(users.c.username == username).values(auth_token=auth_token)
             conn.execute(update_stmt)
 
-    # print("UPDATED")
     return web.json_response(data)
 
 
@@ -382,11 +385,9 @@ async def registration_handler(request: web.Request) -> web.json_response:
         select_stmt = users.select().where(users.c.username == user_email)
         new_user = conn.execute(select_stmt)
         for row in new_user:
-            # print(f"ROW: {row}")
             data['user_id'] = row[0]
             data['username'] = row[1]
 
-    # print(data)
     return web.json_response(data)
 
 
@@ -395,7 +396,6 @@ async def registration_handler(request: web.Request) -> web.json_response:
 async def logged_in_handler(request: web.Request) -> web.json_response:
     data = {"user_id": None, "username": None, "access_level": None, "is_logged_in": False}
     session = await get_session(request)
-    # print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
     if valid_auth_token:
         data["is_logged_in"] = True
@@ -411,7 +411,6 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
 async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
-    # print(f"LOG OUT {session}")
     db = request.app['db']
     db.dispose()
 
@@ -429,7 +428,6 @@ async def logout_handler(request: web.Request) -> web.json_response:
         print(f"ERROR: {err}")
         data = {"log_out_successful": False}
 
-    # print(f"SESSION AFTER LOG OUT: {session}")
     return web.json_response(data)
 
 
@@ -472,18 +470,6 @@ async def edit_handler(request: web.Request) -> web.json_response:
         data['warnings'] = "No new changes were submitted!"
         return web.json_response(data)
 
-    # orig_tag_list = []
-    # new_tag_list = []
-    # if len(orig_tags) > 0:
-    #     for tag in orig_tags:
-    #         t = int(tag.split(',')[0])
-    #         orig_tag_list.append(t)
-    #
-    # if len(new_tags) > 0:
-    #     for tag in new_tags:
-    #         t = int(tag.split(',')[0])
-    #         new_tag_list.append(t)
-
     try:
         with db.connect() as conn:
             date_update = (images.update()
@@ -496,16 +482,13 @@ async def edit_handler(request: web.Request) -> web.json_response:
             # Add any new person tags
             for tag in new_tag_list:
                 if tag not in orig_tag_list:
-                    # print(f"{tag} not in orig_tag_list")
                     # Check database to make sure entry doesn't exist
                     tag_insert_slct = (people_to_image_relationships
                                        .select()
                                        .where(and_(people_to_image_relationships.c.image_id == photo_id,
                                                    people_to_image_relationships.c.person_id == tag)))
                     return_insert_slct = conn.execute(tag_insert_slct)
-                    # print(f"SELECT RUN")
                     returned_tag = return_insert_slct.fetchone()
-                    # print(f"RETURNED TAG: {returned_tag}")
                     if not returned_tag:
                         tag_insert = (people_to_image_relationships.insert().values(image_id=photo_id, person_id=tag))
                         conn.execute(tag_insert)
@@ -529,13 +512,11 @@ async def edit_handler(request: web.Request) -> web.json_response:
                         except exc.SQLAlchemyError as err:
                             print(f"Delete unsuccessful: {err}")
             data['edit_successful'] = True
-            # print(f"Completed database update {data}")
     except exc.SQLAlchemyError as err:
         print(f"{err}")
         data['edit_successful'] = False
         data['error'] = "Unable to save tags"
 
-    print(f"Returning data {data}")
     return web.json_response(data)
 
 
@@ -564,11 +545,9 @@ async def add_person_handler(request: web.Request) -> web.json_response:
             person_id = rtrn_stmt.fetchone()[0]
             prsn_to_prsn = insert(people_to_user_relationships).values(person_id=person_id, linked_to=current_user)
             conn.execute(prsn_to_prsn)
-
             data['person_added'] = True
             data['error'] = None
             data['current_tags'] = await retrieve_people_tags(request.app, current_user)
-            print(f"NEW PERSON CURRENT TAGS: {data['current_tags']}")
     except exc.SQLAlchemyError as err:
         print(f"DATABASE ERROR: {err}")
         data['error'] = "Unable to save new person"
@@ -586,8 +565,6 @@ async def delete_tag_handler(request: web.Request) -> web.json_response:
     tag_lst = raw_tag_data['deleteTags']
     db = request.app['db']
     db.dispose()
-
-    print(f"TAG TO DEL LIST: {tag_lst}")
 
     if len(tag_lst) == 0:
         data['success'] = False
@@ -607,8 +584,6 @@ async def delete_tag_handler(request: web.Request) -> web.json_response:
             print(f"Unable to complete delete: {err}")
             data['error'] = "Unable to delete tag."
 
-        print(f"DELETE TAG DATA: {data}")
-
     return web.json_response(data)
 
 
@@ -619,7 +594,6 @@ async def invite_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     current_user = session.get("user_id")
     req_data = await json_handler(request)
-    # print(f"INVITE ROUTE: current_user: {current_user}, invite_data: {req_data}")
     invite_email = req_data['invite']['email']
     invite_access_level = req_data['invite']['accessLevel']
     today = datetime.datetime.now(datetime.timezone.utc)
@@ -666,7 +640,6 @@ async def invite_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/register-invite")
 async def register_invite_handler(request: web.Request) -> web.json_response:
-    # print(f"REGISTER THE INVITE")
     data = {'invite_redeemed': False, 'error': None, 'username': None, 'user_id': None, 'user_access_level': None}
     session = await new_session(request)
     invite_confirm_data = await json_handler(request)
@@ -677,7 +650,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
     invitee_key = None
     db = request.app['db']
     db.dispose()
-    # print(f"Invitee_email: {invitee_email}; Invitee_code: {invitee_code}")
 
     try:
         with db.connect() as conn:
@@ -686,7 +658,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             selected_invites = conn.execute(select_stmt)
 
             for row in selected_invites:
-                # print(f"INVITES ROW: {row}")
                 tdy = str(datetime.datetime.now(datetime.timezone.utc))
                 if row[3].isoformat() < tdy:
                     data['invite_redeemed'] = False
@@ -703,7 +674,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
         print(f"REDEEM INVITE ERROR: {err}")
 
     if data['invite_redeemed']:
-        # print(f"INVITE REDEEMED")
         temp_password_uuid4 = uuid4()
         temp_password = temp_password_uuid4.hex
         with db.connect() as conn:
@@ -714,7 +684,6 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             new_user = conn.execute(users.select()
                                     .where(and_(users.c.username == invitee_email,
                                                 users.c.password == temp_password)))
-            # print(f"NEW USER: {new_user}")
             new_user_id = None
             for row in new_user:
                 new_user_id = row[0]
@@ -731,14 +700,12 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             data['username'] = invitee_email
             data['user_id'] = new_user_id
             data['user_access_level'] = invitee_access_level
-            # print(f"{session}")
             update_auth_token = (users.update().where(users.c.username == invitee_email)
                                  .values(auth_token=auth_token))
             conn.execute(update_auth_token)
             delete_invite = (invites.delete().where(invites.c.invite_code == invitee_code))
             conn.execute(delete_invite)
 
-    # print(f"INVITE DATA: {data}")
     return web.json_response(data)
 
 
@@ -778,7 +745,6 @@ async def upload_handler(request: web.Request) -> web.json_response:
     db.dispose()
     counter = 0
     end_count = len(image_data)
-    # print(f"IMAGE DATA: {image_data}")
     while counter < end_count:
         key = 'image' + str(counter)
         filename = image_data[key].filename
@@ -787,7 +753,6 @@ async def upload_handler(request: web.Request) -> web.json_response:
         if image_type == 'jpg':
             image_type = 'jpeg'
 
-        # print(f"Handling file {counter} of {end_count}: {filename}")
         # See if file has already been saved
         try:
             with db.connect() as conn:
@@ -796,7 +761,6 @@ async def upload_handler(request: web.Request) -> web.json_response:
                 selected_images = conn.execute(query_stmt)
                 file_exists = False
                 for i in selected_images:
-                    # print(f"IMAGE: {i}")
                     if i[4] == filename:
                         data['warnings'].append(f"Image {filename} already exists!")
                         counter += 1
@@ -804,8 +768,6 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         break
                 if file_exists:
                     continue
-                else:
-                    print(f"{filename} not found in database. Continuing to process and save file.")
 
         except exc.SQLAlchemyError as err:
             print(f"IMAGES ERROR: {err}")
@@ -823,7 +785,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
             else:
                 if image_type == 'mp4':
                     try:
-                        with open(os.path.join('static/images/', filename), 'wb') as f:
+                        with open(os.path.join('../frontend/photo-app/public/user_images/', filename), 'wb') as f:
                             video_contents = image_file.read()
                             f.write(video_contents)
 
@@ -846,9 +808,20 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         print(f"Could not save video: {err}")
                         return web.json_response(data)
                 else:
-                    with open(os.path.join('static/images/', filename), 'wb') as f:
-                        image_contents = image_file.read()
-                        f.write(image_contents)
+                    # used to be 'assets/images/'
+                    # with open(os.path.join('../frontend/photo-app/public/user_images/', filename), 'wb') as f:
+                    #     image_contents = image_file.read()
+                    #     f.write(image_contents)
+
+
+
+                    upload_result = upload_media(image_file, filename, MY_BUCKET)
+                    if not upload_result:
+                        data['upload_successful'] = False
+                        data['error'] = "Unable to save file."
+                        print(f"Could not save image file.")
+                        return web.json_response(data)
+
 
                     # Get exif for date taken
                     img = Image.open(image_file)
@@ -872,13 +845,13 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     new_height = int((float(orig_size[1]) * float(width_percent)))
                     web_resized_img = img.resize((300, new_height))
                     web_size_filename = 'web_' + filename
-                    web_resized_img.save('static/images/' + web_size_filename, image_type.upper(), quality=95)
+                    web_resized_img.save('../frontend/photo-app/public/user_images/' + web_size_filename, image_type.upper(), quality=95)
 
                     # Create thumbnail and save
                     thumb_size = 128, 128
                     thumb_filename = 'thumb_' + filename
                     img.thumbnail(thumb_size)
-                    img.save('static/images/' + thumb_filename, image_type.upper(), quality=95)
+                    img.save('../frontend/photo-app/public/user_images/' + thumb_filename, image_type.upper(), quality=95)
 
                     try:
                         with db.connect() as conn:

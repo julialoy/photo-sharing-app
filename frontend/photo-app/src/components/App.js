@@ -62,7 +62,7 @@ class App extends PureComponent {
     axios.get("http://localhost:8080/", {withCredentials: true}, {cancelToken: this.signal.token})
     .then(data => {
       if(data.data.photos) {
-        // console.log("PHOTOS DATA: ", data.data.photos);
+        console.log("PHOTOS DATA: ", data.data.photos);
         if(data.data.photos.length > 0) {
           this.setState( prevState => ({
             photos: prevState.photosFiltered ? this.filterPhotos(prevState.filteredTags, data.data.photos) : data.data.photos,

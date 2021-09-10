@@ -31,7 +31,8 @@ class Photos extends Component {
               className="image-element-class" 
               key={`${elementArray[x].filename}-src`} 
               type="video/mp4"
-              src={elementArray[x].web_size_loc}
+              // Change to web_size_filename from web_size_loc
+              src={process.env.PUBLIC_URL + "/user_images/" + elementArray[x].web_size_filename}
             />
           </video>
         );
@@ -40,7 +41,9 @@ class Photos extends Component {
           <img 
             className="image-element-class"
             key={elementArray[x].filename}
-            src={elementArray[x].web_size_loc}
+            // Change to web_size_filename from web_size_loc
+            // src={process.env.PUBLIC_URL + elementArray[x].web_size_filename}
+            src={process.env.PUBLIC_URL + "/user_images/" + elementArray[x].web_size_filename}
             alt=""
             onClick={() => this.props.showPhotoModal(elementArray[x])}
           />
@@ -52,6 +55,7 @@ class Photos extends Component {
 
   render() {
     const childElements = this.createChildElements(this.props.yearPhotos);
+    console.log("CHILD ELEMENTS: ", childElements);
     return (
       <Masonry
         className={"my-gallery-class"}
