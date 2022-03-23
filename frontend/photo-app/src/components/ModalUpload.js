@@ -29,7 +29,8 @@ class ModalUpload extends Component {
     onClose: PropTypes.func,
     show: PropTypes.bool,
     isAuthed: PropTypes.bool.isRequired,
-    completePhotoUpload: PropTypes.func,
+    // completePhotoUpload: PropTypes.func,
+    handlePhotoUpload: PropTypes.func,
     currentUser: PropTypes.object
   };
 
@@ -119,7 +120,8 @@ class ModalUpload extends Component {
           });
           this.handleDropzoneReset();
         } else {
-          this.props.completePhotoUpload(false);
+          // this.props.completePhotoUpload(false);
+          this.props.handlePhotoUpload(false);
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
           });

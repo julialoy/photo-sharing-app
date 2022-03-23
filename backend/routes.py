@@ -2,6 +2,8 @@ import asyncio
 import datetime
 # from email.message import EmailMessage
 import functools
+import urllib.request
+from io import BytesIO
 import json
 import logging
 import os
@@ -10,6 +12,7 @@ import string
 from pathlib import Path
 from typing import Awaitable, Callable
 from uuid import uuid4
+from urllib import request
 
 from aiohttp import web
 from aiohttp_session import setup, get_session, new_session
@@ -17,24 +20,58 @@ from aiohttp_session import setup, get_session, new_session
 # from aiosmtplib import SMTP
 # from aiosmtplib import SMTPTimeoutError
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
+import logging
 from PIL import Image
 from sqlalchemy import and_, exc, insert, Integer, String
 
 from db import (users, images, invites, albums, people,
                 people_to_user_relationships, people_to_album_relationships,
                 user_to_user_relationships, people_to_image_relationships)
+from settings import access_key, secret_key
 
 BASE_PATH = Path(__file__).parent
 router = web.RouteTableDef()
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
+MY_BUCKET_NAME = 'hoardpicsbucket'
 
-MY_BUCKET = os.environ.get('S3_BUCKET')
+MY_BUCKET_CONFIG = Config(
+    region_name='us-east-2',
+    signature_version='s3v4',
+    retries={
+        'max_attempts': 10,
+        'mode': 'standard'
+    }
+)
 
 
 def require_login(func: _WebHandler) -> _WebHandler:
     func.__require_login__ = True   # type: ignore
     return func
+
+
+# From boto3  Amazon S3 examples
+async def create_presigned_url(bucket_name, object_name, expiration=3600):
+    """Generate a presigned URL to invoke an S3.Client method."""
+    # s3_client = boto3.client('s3',
+    #                          config=MY_BUCKET_CONFIG,
+    #                          aws_access_key_id=access_key,
+    #                          aws_secret_access_key=secret_key)
+    s3_client = boto3.client('s3')
+
+    try:
+        response = s3_client.generate_presigned_url('get_object',
+                                                    Params={'Bucket': bucket_name,
+                                                            'Key': object_name},
+                                                    ExpiresIn=expiration)
+    except ClientError as e:
+        logging.error(e)
+        print(f"Error creating presigned URL: {e}")
+        return None
+
+    # Presigned URL should be in response
+    return response
 
 
 async def retrieve_people_tags(app: web.Application, current_user_id: Integer) -> list:
@@ -189,30 +226,38 @@ def order_images(parsed_image_array) -> None:
 #
 #     return image_data
 
-# From Boto3 documentation
-def upload_media(upload_image, file_name, bucket, object_name=None):
+# From Boto3 documentation and erangad.medium.com/upload-a-remote-image-to-s3-without-saving-it-first-0with-python
+async def upload_media(upload_image, file_name, object_name=None):
     """Upload a file to an S3 bucket
 
     :param file_name: File to upload
-    :param bucket: Bucket to upload to
     :param object_name: S3 object name. If not specified then file_name is used
     :return: True if file was uploaded, else False
     """
 
-    print(f"BUCKET NAME: {bucket}")
+    # print(f"BUCKET NAME: {bucket.name}")
 
     # If S3 object_name was not specified, use file_name
     if object_name is None:
         object_name = os.path.basename(file_name)
 
     # Upload the file
-    s3_client = boto3.client('s3')
+    # s3_client = boto3.client('s3')
+    s3_client = boto3.client('s3',
+                             config=MY_BUCKET_CONFIG,
+                             aws_access_key_id=access_key,
+                             aws_secret_access_key=secret_key)
     try:
-        with open(upload_image, "rb") as f:
-            s3_client.upload_fileobj(f, bucket, object_name)
+        s3_client.upload_fileobj(upload_image, MY_BUCKET_NAME, object_name)
+        print(f"Trying to upload image")
+        #with open(upload_image, "rb") as f:
+            #s3_client.upload_fileobj(f, 'hoardpicsbucket', object_name)
+            #s3_client.upload_file(f, 'hoardpicsbucket', object_name)
     except ClientError as e:
         logging.error(e)
+        print(f"Upload error: {e}")
         return False
+    print(f"Image uploaded")
     return True
 
 
@@ -324,6 +369,7 @@ async def index_handler(request: web.Request) -> web.json_response:
 @asyncio.coroutine
 @router.post("/login")
 async def login_handler(request: web.Request) -> web.json_response:
+    print(f"HIT LOGIN")
     session = await new_session(request)
     request_json = await json_handler(request)
     username = request_json['user']['email']
@@ -332,7 +378,7 @@ async def login_handler(request: web.Request) -> web.json_response:
     db = request.app['db']
     db.dispose()
     selected_user = None
-
+    print(f"Trying to login: {username}")
     with db.connect() as conn:
         query_stmt = users.select().where(and_(users.c.username == username, users.c.password == password))
         selected_user_result = conn.execute(query_stmt)
@@ -749,6 +795,15 @@ async def upload_handler(request: web.Request) -> web.json_response:
     db.dispose()
     counter = 0
     end_count = len(image_data)
+    print(f"LENGTH OF IMAGE DATA: {end_count}")
+    s3_client = boto3.client('s3',
+                             config=MY_BUCKET_CONFIG,
+                             aws_access_key_id=access_key,
+                             aws_secret_access_key=secret_key)
+    s3 = boto3.resource('s3',
+                        region_name='us-east-2',
+                        aws_access_key_id=access_key,
+                        aws_secret_access_key=secret_key)
     while counter < end_count:
         key = 'image' + str(counter)
         filename = image_data[key].filename
@@ -756,7 +811,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
         image_type = filename.split('.')[-1]
         if image_type == 'jpg':
             image_type = 'jpeg'
-
+        print(f"IMAGE TYPE: {image_type}")
         # See if file has already been saved
         try:
             with db.connect() as conn:
@@ -772,7 +827,6 @@ async def upload_handler(request: web.Request) -> web.json_response:
                         break
                 if file_exists:
                     continue
-
         except exc.SQLAlchemyError as err:
             print(f"IMAGES ERROR: {err}")
         else:
@@ -817,18 +871,24 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     #     image_contents = image_file.read()
                     #     f.write(image_contents)
 
-
-
-                    upload_result = upload_media(image_file, filename, MY_BUCKET)
+                    upload_result = await upload_media(image_file, filename)
+                    print(f"DID PHOTO UPLOAD? {upload_result}")
                     if not upload_result:
                         data['upload_successful'] = False
                         data['error'] = "Unable to save file."
                         print(f"Could not save image file.")
                         return web.json_response(data)
 
-
                     # Get exif for date taken
-                    img = Image.open(image_file)
+                    #presigned_url = await create_presigned_url(MY_BUCKET_NAME, filename)
+                    #print(f"PRESIGNED URL: {presigned_url}")
+                    #img = Image.open(image_file)
+                    #img = Image.open(urllib.request.urlopen(presigned_url).read())
+                    bucket = s3.Bucket(MY_BUCKET_NAME)
+                    object = bucket.Object(filename)
+                    response = object.get()
+                    file_stream = response['Body']
+                    img = Image.open(file_stream)
                     exif_data = img.getexif()
                     creation_exif_date = exif_data.get(36867)
                     img = fix_image_orientation(img)
@@ -866,14 +926,14 @@ async def upload_handler(request: web.Request) -> web.json_response:
                                                        thumbnail_filename=thumb_filename))
                             conn.execute(update_img_stmt)
 
-                        # print(f"creation_date for {filename}: {creation_date}")
+                        print(f"creation_date for {filename}: {creation_date}")
                         data['upload_successful'] = True
-
+                        print(f"Upload successful")
                         counter += 1
                     except exc.SQLAlchemyError as err:
                         data['upload_successful'] = False
                         data['error'] = err
                         print(f"Unable to update image date: {err}")
                         return web.json_response(data)
-
+    print(f"RESPONSE DATA: {data}")
     return web.json_response(data)

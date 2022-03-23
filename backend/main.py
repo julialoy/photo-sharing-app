@@ -18,7 +18,8 @@ from db import create_tables, close_pg, init_pg, clean_invite_db, delete_all_aut
 from routes import (add_person_handler, delete_tag_handler, edit_handler, index_handler, invite_handler,
                     logged_in_handler, login_handler, logout_handler, register_invite_handler, registration_handler,
                     reset_password_handler, router, upload_handler)
-from settings import config, frontend_url
+from settings import config, frontend_url, access_key, secret_key
+from botocore.config import Config
 
 # Configure base path
 BASE_PATH = Path(__file__).parent
@@ -30,12 +31,26 @@ load_dotenv(dotenv_path)
 # fernet_key = str.encode(key)
 fernet_key = str.encode(os.environ.get('SECRET_KEY'))
 SECRET_KEY = base64.urlsafe_b64decode(fernet_key)
-FRONTEND_URL = os.environ.get('SOURCE_URL')
+# FRONTEND_URL = os.environ.get('SOURCE_URL')
+FRONTEND_URL = frontend_url
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]
-s3 = boto3.resource('s3')
+
+my_bucket_config = Config(
+    region_name='us-east-2',
+    signature_version='s3v4',
+    retries={
+        'max_attempts': 10,
+        'mode': 'standard'
+    }
+)
+s3 = boto3.resource('s3',
+                    config=my_bucket_config,
+                    aws_access_key_id=access_key,
+                    aws_secret_access_key=secret_key)
 
 
 def test_boto():
+
     print("TESTING BOTO: ")
     for bucket in s3.buckets.all():
         print(bucket.name)

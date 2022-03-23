@@ -29,7 +29,8 @@ class Upload extends Component {
     onClose: PropTypes.func,
     show: PropTypes.bool,
     isAuthed: PropTypes.bool.isRequired,
-    completePhotoUpload: PropTypes.func,
+    // completePhotoUpload: PropTypes.func,
+    handlePhotoUpload: PropTypes.func,
     currentUser: PropTypes.object
   };
 
@@ -113,13 +114,15 @@ class Upload extends Component {
           });
           console.log("ERROR UPLOADING: ", response.data.error);
         } else if(response.data.upload_successful) {
-          this.props.completePhotoUpload(true);
+          // this.props.completePhotoUpload(true);
+          this.props.handlePhotoUpload(true);
           this.setState({
             successMsg: "Upload successful!"
           });
           this.handleDropzoneReset();
         } else {
-          this.props.completePhotoUpload(false);
+          // this.props.completePhotoUpload(false);
+          this.props.handlePhotoUpload(false);
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
           });
