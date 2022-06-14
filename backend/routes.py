@@ -2,6 +2,7 @@ import asyncio
 import datetime
 # from email.message import EmailMessage
 import functools
+import io
 import urllib.request
 from io import BytesIO
 import json
@@ -884,6 +885,7 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     #print(f"PRESIGNED URL: {presigned_url}")
                     #img = Image.open(image_file)
                     #img = Image.open(urllib.request.urlopen(presigned_url).read())
+                    # Below is from Stackoverflow
                     bucket = s3.Bucket(MY_BUCKET_NAME)
                     object = bucket.Object(filename)
                     response = object.get()
@@ -909,13 +911,32 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     new_height = int((float(orig_size[1]) * float(width_percent)))
                     web_resized_img = img.resize((300, new_height))
                     web_size_filename = 'web_' + filename
-                    web_resized_img.save('../frontend/photo-app/public/user_images/' + web_size_filename, image_type.upper(), quality=95)
+                    web_mem_file = io.BytesIO()
+                    web_resized_img.save(web_mem_file, image_type.upper(), quality=95)
+                    web_mem_file.seek(0)
+                    #web_resized_img.save('../frontend/photo-app/public/user_images/' + web_size_filename, image_type.upper(), quality=95)
+                    web_upload_result = await upload_media(web_mem_file, web_size_filename)
+                    if not web_upload_result:
+                        data['upload_successful'] = False
+                        data['error'] = "Unable to save web file."
+                        print(f"Could not save web image file.")
+                        return web.json_response(data)
+
 
                     # Create thumbnail and save
                     thumb_size = 128, 128
                     thumb_filename = 'thumb_' + filename
                     img.thumbnail(thumb_size)
-                    img.save('../frontend/photo-app/public/user_images/' + thumb_filename, image_type.upper(), quality=95)
+                    thumb_mem_file = io.BytesIO()
+                    img.save(thumb_mem_file, image_type.upper(), quality=95)
+                    thumb_mem_file.seek(0)
+                    #img.save('../frontend/photo-app/public/user_images/' + thumb_filename, image_type.upper(), quality=95)
+                    thumb_upload_result = await upload_media(thumb_mem_file, thumb_filename)
+                    if not thumb_upload_result:
+                        data['upload_successful'] = False
+                        data['error'] = "Unable to save thumbnail."
+                        print(f"Could not save thumbnail.")
+                        return web.json_response(data)
 
                     try:
                         with db.connect() as conn:
