@@ -273,13 +273,13 @@ async def check_login(request: web.Request,
     return await handler(request)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 async def json_handler(self, *, loads=json.loads):
     body = await self.text()
     return loads(body)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.get("/")
 # @require_login
 async def index_handler(request: web.Request) -> web.json_response:
@@ -308,16 +308,16 @@ async def index_handler(request: web.Request) -> web.json_response:
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/login")
 async def login_handler(request: web.Request) -> web.json_response:
-    # print("FIND USER AND LOG IN")
+    print("FIND USER AND LOG IN")
     session = await new_session(request)
     request_json = await json_handler(request)
-    # print(f"TRY TO LOG IN DATA: {request_json}")
+    print(f"TRY TO LOG IN DATA: {request_json}")
     username = request_json['user']['email']
     password = request_json['user']['password']
-    # print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
+    print(f"TRY TO LOG IN USERNAME {username} WITH PASSWORD {password}")
     data = {'logged_in': False, 'user_id': None, 'username': None, 'access_level': None}
     db = request.app['db']
     db.dispose()
@@ -328,7 +328,7 @@ async def login_handler(request: web.Request) -> web.json_response:
         selected_user_result = conn.execute(query_stmt)
         for row in selected_user_result:
             selected_user = row
-    # print(f"SELECTED USER: {selected_user}")
+    print(f"SELECTED USER: {selected_user}")
 
     if not selected_user:
         print(f"NO USER FOUND {selected_user}")
@@ -347,7 +347,7 @@ async def login_handler(request: web.Request) -> web.json_response:
         session["auth_token"] = auth_token
         session["access_level"] = selected_user[3]
         session["logged_in"] = True
-        # print(f"LOGIN DATA: {data}")
+        print(f"LOGIN DATA: {data}")
         with db.connect() as conn:
             update_stmt = users.update().where(users.c.username == username).values(auth_token=auth_token)
             conn.execute(update_stmt)
@@ -356,7 +356,7 @@ async def login_handler(request: web.Request) -> web.json_response:
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/register")
 async def registration_handler(request: web.Request) -> web.json_response:
     request_json = await json_handler(request)
@@ -382,20 +382,22 @@ async def registration_handler(request: web.Request) -> web.json_response:
         select_stmt = users.select().where(users.c.username == user_email)
         new_user = conn.execute(select_stmt)
         for row in new_user:
-            # print(f"ROW: {row}")
+            print(f"ROW: {row}")
             data['user_id'] = row[0]
             data['username'] = row[1]
+        
+        conn.commit()
 
     # print(data)
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/logged_in")
 async def logged_in_handler(request: web.Request) -> web.json_response:
     data = {"user_id": None, "username": None, "access_level": None, "is_logged_in": False}
     session = await get_session(request)
-    # print(f"LOGGED IN? {session}")
+    print(f"LOGGED IN? {session}")
     valid_auth_token = session.get("auth_token")
     if valid_auth_token:
         data["is_logged_in"] = True
@@ -405,13 +407,13 @@ async def logged_in_handler(request: web.Request) -> web.json_response:
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.get("/logout")
 @require_login
 async def logout_handler(request: web.Request) -> web.json_response:
     session = await get_session(request)
     username = session.get("username")
-    # print(f"LOG OUT {session}")
+    print(f"LOG OUT {session}")
     db = request.app['db']
     db.dispose()
 
@@ -429,11 +431,11 @@ async def logout_handler(request: web.Request) -> web.json_response:
         print(f"ERROR: {err}")
         data = {"log_out_successful": False}
 
-    # print(f"SESSION AFTER LOG OUT: {session}")
+    print(f"SESSION AFTER LOG OUT: {session}")
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/edit")
 @require_login
 async def edit_handler(request: web.Request) -> web.json_response:
@@ -530,6 +532,8 @@ async def edit_handler(request: web.Request) -> web.json_response:
                             print(f"Delete unsuccessful: {err}")
             data['edit_successful'] = True
             # print(f"Completed database update {data}")
+
+            conn.commit()
     except exc.SQLAlchemyError as err:
         print(f"{err}")
         data['edit_successful'] = False
@@ -603,6 +607,8 @@ async def delete_tag_handler(request: web.Request) -> web.json_response:
                     conn.execute(tag_delete_stmt)
             data['success'] = True
             data['current_tags'] = await retrieve_people_tags(request.app, current_user)
+
+            conn.commit()
         except exc.SQLAlchemyError as err:
             print(f"Unable to complete delete: {err}")
             data['error'] = "Unable to delete tag."
@@ -646,6 +652,7 @@ async def invite_handler(request: web.Request) -> web.json_response:
             conn.execute(insert_stmt)
             data['invite_sent'] = True
             data['invite_code'] = invite_code
+            conn.commit()
     except exc.SQLAlchemyError as err:
         print(f"DATABASE ERROR: {err}")
         data['error'] = "Unable to complete invite"
@@ -663,7 +670,7 @@ async def invite_handler(request: web.Request) -> web.json_response:
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/register-invite")
 async def register_invite_handler(request: web.Request) -> web.json_response:
     # print(f"REGISTER THE INVITE")
@@ -738,11 +745,12 @@ async def register_invite_handler(request: web.Request) -> web.json_response:
             delete_invite = (invites.delete().where(invites.c.invite_code == invitee_code))
             conn.execute(delete_invite)
 
+            conn.commit()
     # print(f"INVITE DATA: {data}")
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/reset-password")
 @require_login
 async def reset_password_handler(request: web.Request) -> web.json_response:
@@ -758,7 +766,9 @@ async def reset_password_handler(request: web.Request) -> web.json_response:
         with db.connect() as conn:
             update_stmt = (users.update().where(users.c.id == current_user_id).values(password=new_password))
             conn.execute(update_stmt)
+            conn.commit()
         data['password_reset_successful'] = True
+
     except exc.SQLAlchemyError as err:
         print(f"RESET PASSWORD ERROR: {err}")
         data['error'] = "A database error occurred. Unable to reset password."
@@ -766,7 +776,7 @@ async def reset_password_handler(request: web.Request) -> web.json_response:
     return web.json_response(data)
 
 
-@asyncio.coroutine
+# @asyncio.coroutine
 @router.post("/upload")
 @require_login
 async def upload_handler(request: web.Request) -> web.json_response:
@@ -806,15 +816,19 @@ async def upload_handler(request: web.Request) -> web.json_response:
                     continue
                 else:
                     print(f"{filename} not found in database. Continuing to process and save file.")
-
         except exc.SQLAlchemyError as err:
             print(f"IMAGES ERROR: {err}")
         else:
             # If file doesn't already exist update database for new file and save
+            print("Processing Images in else block")
             try:
                 with db.connect() as conn:
                     insert_stmt = insert(images).values(user_id=current_user, filename=filename)
                     conn.execute(insert_stmt)
+                    conn.commit()
+                    image_select_stmt = (images.select().where(and_(images.c.filename == filename, images.c.user_id == current_user)))
+                    processed_images = conn.execute(image_select_stmt)
+                    print(f"{processed_images}")
             except exc.SQLAlchemyError as err:
                 data['upload_successful'] = False
                 data['error'] = err
@@ -834,8 +848,9 @@ async def upload_handler(request: web.Request) -> web.json_response:
                                             .where(images.c.filname == filename)
                                             .values(date_taken=vid_creation_date))
                         conn.execute(update_date_stmt)
+                        conn.commit()
 
-                    # print(f"creation_date for {filename}: {vid_creation_date}")
+                    print(f"creation_date for {filename}: {vid_creation_date}")
                     data['upload_successful'] = True
 
                     counter += 1
@@ -881,8 +896,8 @@ async def upload_handler(request: web.Request) -> web.json_response:
                                                    web_size_filename=web_size_filename,
                                                    thumbnail_filename=thumb_filename))
                         conn.execute(update_img_stmt)
-
-                    # print(f"creation_date for {filename}: {creation_date}")
+                        conn.commit()
+                    print(f"creation_date for {filename}: {creation_date}")
                     data['upload_successful'] = True
 
                     counter += 1

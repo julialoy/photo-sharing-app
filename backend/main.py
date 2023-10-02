@@ -13,10 +13,10 @@ from db import create_tables, close_pg, init_pg, clean_invite_db, delete_all_aut
 from routes import (add_person_handler, delete_tag_handler, edit_handler, index_handler, invite_handler,
                     logged_in_handler, login_handler, logout_handler, register_invite_handler, registration_handler,
                     reset_password_handler, router, upload_handler)
-from settings import config, key
+from settings import config, secret_key
 
 
-fernet_key = str.encode(key)
+fernet_key = str.encode(secret_key)
 SECRET_KEY = base64.urlsafe_b64decode(fernet_key)
 BASE_PATH = Path(__file__).parent
 _WebHandler = Callable[[web.Request], Awaitable[web.StreamResponse]]

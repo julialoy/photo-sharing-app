@@ -3,7 +3,7 @@ import { withRouter, BrowserRouter, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import axios from 'axios';
 import moment from 'moment';
-// import Upload from "./Upload";
+import Upload from "./Upload";
 import Year from "./Year";
 // import Settings from "./UserSettings";
 import Modal from "./Modal";
@@ -344,14 +344,14 @@ class Home extends PureComponent {
           </header>
         </div>
         <div className="container-fluid" id="main-body">
-        {/* <Upload 
+        <Upload 
           isAuthed={isAuthed}
           show={this.state.showUploadModal}
           completePhotoUpload={this.handleCompletePhotoUpload}
           currentUser={currentUser}
-          onClose={this.handleUploadModalClose}
+          onClose={this.handleModalClose}
         />
-        <Settings 
+        {/*<Settings 
           isAuthed={isAuthed}
           show={this.state.showSettingsModal}
           currentUser={currentUser}

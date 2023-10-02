@@ -175,6 +175,8 @@ class Upload extends Component {
     //   return null;
     // }
 
+    console.log("Showing Upload Modal");
+
     return (
       <div className="modal-backdrop">
         <div className="modal" display="block" id="upload-modal">
