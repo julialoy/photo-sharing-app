@@ -18,3 +18,4 @@ Hoard pics allows users to organize their photos and videos and share them with 
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/ff872075-2462-4adc-b33d-f63d952b26c4)
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/4a6e5dbf-6ab9-43b4-ae18-be234629de2d)
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/dc78bc74-2459-4196-a36e-4ede037aaaee)
+![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6d3f5e59-5a84-400a-9dcc-dfb200c23324)
