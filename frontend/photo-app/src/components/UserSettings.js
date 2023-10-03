@@ -82,7 +82,6 @@ class Settings extends Component {
         {withCredentials: true}
       )
       .then(response => {
-        console.log("ADD PERSON RESPONSE: ", response.data);
         if(response.data.person_added) {
           this.setState({
             prsnSuccessMsg: `${firstName} ${lastName} added!`
@@ -121,7 +120,6 @@ class Settings extends Component {
         {withCredentials: true}
       )
       .then(response => {
-        console.log("INVITE RESPONSE: ", response.data);
         if(response.data.invite_sent) {
           this.setState({
             successMsg: `Success! Use this code to invite your family or friend: ${response.data.invite_code}.`,
@@ -190,8 +188,6 @@ class Settings extends Component {
       {this.state.prsnSuccessMsg}
     </div>
 
-    console.log("SETTINGS CURRENT USER: ", currentUser);
-
     if(!isAuthed) {
       this.handleLoginRedirect();
     }
@@ -204,7 +200,6 @@ class Settings extends Component {
       return null;
     }
 
-    console.log("SETTINGS CURRENT STATE: ", this.state);
     return (
       <div className="modal-backdrop">
         <div className="modal" display="block" id="settings-modal">

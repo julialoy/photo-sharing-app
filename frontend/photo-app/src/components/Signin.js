@@ -84,7 +84,6 @@ class Signin extends Component {
         }
       })
       .catch(error => {
-        console.log("login error:", error);
         this.handleResetOnError(error);
       });
   }

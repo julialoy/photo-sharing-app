@@ -1,37 +1,9 @@
 import React, { PureComponent } from 'react';
 import Checkbox from './Checkboxes';
 
-// const createTagCheckboxes = (props) => {
-//   return (
-//     props.peopleTags.map(tag => 
-//       <Checkbox
-//         value={tag.person_first_name} 
-//         label={tag.person_first_name}
-//         isSelected={props.checkboxes[tag.person_first_name]}
-//         key={`${tag.person_first_name}-setting-checkbox-key`}
-//         onChange={props.onChange}
-//       />
-//     )
-//   );
-// }
-
-// const PeopleForm = (props) => {
-//   return (
-//     <form className="edit-tag-form form-inline" onSubmit={props.onSubmit}>
-//       <div className="form-group mx-3">
-//         {createTagCheckboxes(props)}
-//       </div>
-//       <div className="form-group mx-3" id="setting-form-btn">
-//         <button className="btn btn-dark" type="submit">Delete</button>
-//       </div>
-//     </form>
-//   );
-// }
-
 class PeopleForm extends PureComponent {
   constructor(props) {
     super(props);
-
     this.createTagCheckboxes = this.createTagCheckboxes.bind(this);
   }
 

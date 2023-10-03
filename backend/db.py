@@ -73,7 +73,7 @@ invites = Table(
     Column('access_level', String, nullable=False),
 )
 
-# user_to_user table unused
+# user_to_user table currently unused
 user_to_user_relationships = Table(
     'user_to_user_relationships', meta,
 
@@ -115,7 +115,7 @@ async def init_pg(app: web.Application) -> None:
     print(f"INIT_PG")
     db_url = DSN.format(**config['postgres'])
     engine = create_engine(db_url)
-    print(f"IN INIT_PG, ENGINE: {engine}")
+    print(f"ENGINE: {engine}")
     create_tables(engine)
     clean_invite_db(engine)
     delete_all_auth_tokens(engine)
@@ -124,8 +124,7 @@ async def init_pg(app: web.Application) -> None:
 
 async def close_pg(app: web.Application) -> None:
     print(f"CLOSE_PG")
-    app['db'].close()
-    await app['db'].wait_closed()
+    app['db'].dispose()
     del app['db']
 
 

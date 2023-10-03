@@ -85,7 +85,6 @@ class App extends PureComponent {
   }
 
   handleSuccessfulAuth(data) {
-    // console.log("SUCCESSFUL AUTH DATA: ", data)
     this.setState(() => ({
       current_user: {
         id: data.user_id,

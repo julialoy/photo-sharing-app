@@ -77,8 +77,6 @@ class ModalSettings extends PureComponent {
     });
   }
 
-  // Check that response needs to send tags?
-  // Check that checkboxes need to be initialized?
   handleNewPerson(evt) {
     evt.preventDefault();
     const firstName = this.state.newPersonFN;
@@ -99,7 +97,6 @@ class ModalSettings extends PureComponent {
         {withCredentials: true}
       )
       .then(response => {
-        console.log(`ADD PERSON RESPONSE: ${response.data}`);
         if(response.data.person_added) {
           this.setState({
             newPersonFN: "",
@@ -143,7 +140,6 @@ class ModalSettings extends PureComponent {
         {withCredentials: true}
       )
       .then(response => {
-        console.log(`INVITE RESPONSE: ${response.data}`);
         if(response.data.invite_sent) {
           this.setState({
             inviteEmail: "",
@@ -200,8 +196,6 @@ class ModalSettings extends PureComponent {
   }
 
   handleCheckboxChange(e) {
-    console.log("SETTINGS CHECKBOX CHANGED");
-    console.log(e);
     const name = e.target.value;
     this.setState(prevState => ({
       checkboxes: {
@@ -222,12 +216,9 @@ class ModalSettings extends PureComponent {
     return deleteTags;
   }
 
-  // Check  that response needs to include tags?
-  // Check that checkboxes need to be initialized here?
   handleTagFormSubmit(e) {
     e.preventDefault();
     const tagsToDelete = this.parseCheckboxChanges();
-    console.log("HANDLE TAG FORM SUBMIT TAGS TO DELETE: ", tagsToDelete);
     if(tagsToDelete) {
       axios.post("http://localhost:8080/delete-tag",
         {deleteTags: tagsToDelete},
@@ -235,14 +226,11 @@ class ModalSettings extends PureComponent {
       )
       .then(response => {
         if(response.data.success) {
-          console.log("TAG FORM RESPONSE DATA: ", response.data);
           this.setState({
             newPeopleTags: response.data.current_tags
           }, () => {
-            console.log("NEW CURRENT TAGS: ", this.state.newPeopleTags)
             this.initializeCheckboxes(this.state.newPeopleTags);
           });
-          console.log('TAG(S) SUCCESSFULLY DELETED');
           this.props.handlePeopleTagChange();
         } else {
           this.setState({
@@ -260,9 +248,6 @@ class ModalSettings extends PureComponent {
 
   render() {
     const {settIsOpen, isAuthed, currentUser} = this.props;
-    
-
-    console.log("SETTINGS CURRENT USER: ", currentUser);
 
     if(!isAuthed) {
       this.handleLoginRedirect();
@@ -276,8 +261,6 @@ class ModalSettings extends PureComponent {
       window.addEventListener('keydown', this.handleKeyDown);
     }
 
-    console.log("SETTINGS CURRENT STATE: ", this.state);
-    console.log("PEOPLE TAGS: ", this.props.peopleTags);
     return (
       <div className="modal-backdrop">
         <div className="modal" display="block" id="settings-modal">

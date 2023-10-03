@@ -5,7 +5,6 @@ import axios from 'axios';
 import moment from 'moment';
 import Upload from "./Upload";
 import Year from "./Year";
-// import Settings from "./UserSettings";
 import Modal from "./Modal";
 
 class Home extends PureComponent {
@@ -37,9 +36,7 @@ class Home extends PureComponent {
     this.handleModalClose = this.handleModalClose.bind(this);
     this.handleCompletePhotoUpload = this.handleCompletePhotoUpload.bind(this);
     this.showUploadModal = this.showUploadModal.bind(this);
-    // this.handleUploadModalClose = this.handleUploadModalClose.bind(this);
     this.showSettingsModal = this.showSettingsModal.bind(this);
-    // this.handleSettingsModalClose = this.handleSettingsModalClose.bind(this);
     this.handlePhotoDataSubmit = this.handlePhotoDataSubmit.bind(this);
     this.handleCloseModalMsg = this.handleCloseModalMsg.bind(this);
   }
@@ -107,7 +104,6 @@ class Home extends PureComponent {
               }
             }));
           } else {
-            console.log("Unable to save data");
             this.setState({
               photoModal: {
                 showPhotoModal: true,
@@ -118,7 +114,6 @@ class Home extends PureComponent {
         })
         .catch(err => console.log(err));
       } else {
-        console.log("INVALID DATA");
         this.setState({
           photoModal: {
             errorMsg: "Invalid data entered"
@@ -169,13 +164,6 @@ class Home extends PureComponent {
     document.body.classList.add('modal-open');
   }
 
-  // handleSettingsModalClose() {
-  //   this.setState({
-  //     showSettingsModal: false
-  //   });
-  //   document.body.classList.remove('modal-open');
-  // }
-
   showUploadModal() {
     // Lock scrolling on body component
     this.setState({
@@ -183,14 +171,6 @@ class Home extends PureComponent {
     });
     document.body.classList.add('modal-open');
   }
-
-  // handleUploadModalClose() {
-  //   this.setState({
-  //     showUploadModal: false
-  //   });
-  //   // Allow scrolling on body component
-  //   document.body.classList.remove('modal-open');
-  // }
 
   showPhotoModal(photoData) {
     const photoDateStrip = photoData.date_taken.split('T')[0];
@@ -312,14 +292,6 @@ class Home extends PureComponent {
                         Upload
                       </Link>
                     </li>
-{/*                     <li className="nav-item">
-                      <Link 
-                        to="/activity" 
-                        className="nav-link"
-                      >
-                        Activity
-                      </Link>
-                    </li> */}
                     <li className="nav-item">
                       <Link 
                         to="/" 
@@ -351,13 +323,6 @@ class Home extends PureComponent {
           currentUser={currentUser}
           onClose={this.handleModalClose}
         />
-        {/*<Settings 
-          isAuthed={isAuthed}
-          show={this.state.showSettingsModal}
-          currentUser={currentUser}
-          peopleTags={this.props.peopleTags}
-          onClose={this.handleSettingsModalClose}
-        /> */}
         <Modal
           isAuthed={isAuthed}
           uploadIsOpen={this.state.showUploadModal}

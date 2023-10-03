@@ -62,8 +62,6 @@ class ModalMainPhoto extends PureComponent {
   }
 
   handleCheckboxChange(e) {
-    console.log("CHECKBOX CHANGED");
-    console.log(e);
     const name = e.target.value;
     this.setState( prevState => ({
       checkboxes: {
@@ -130,7 +128,6 @@ class ModalMainPhoto extends PureComponent {
       window.addEventListener('keydown', this.handleKeyDown);
     }
 
-    console.log(`MODAL STATE ${this.state}`);
     return (
     <div className="modal-backdrop" id="photo-modal-container">
       <div className="modal" display="block" id="photo-modal">

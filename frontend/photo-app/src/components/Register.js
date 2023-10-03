@@ -43,15 +43,15 @@ class Register extends Component {
       .then(response => {
         if(response.data.is_registered) {
           this.props.handleSuccessfulAuth(response.data);
-          this.handleIndexRedirect();
-          console.log(response.data);  
+          this.handleIndexRedirect(); 
         } else if(response.data.error) {
-          console.log(`else if ${response.data.error}`);
           this.setState({
             registrationErrors: response.data.error
           });
         } else {
-          console.log(`else ${response.data}`);
+          this.setState({
+            registrationErrors: "Unknown registration error"
+          });
         }
       })
       .catch(err => console.log(err));

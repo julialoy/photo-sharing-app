@@ -111,7 +111,6 @@ class Upload extends Component {
           this.setState({
             errorMsg: "Unable to upload files. Something went wrong."
           });
-          console.log("ERROR UPLOADING: ", response.data.error);
         } else if(response.data.upload_successful) {
           this.props.completePhotoUpload(true);
           this.setState({
@@ -129,7 +128,6 @@ class Upload extends Component {
   }
 
   handleThumbRender(filesArray) {
-    console.log("IN HANDLE THUMB RENDER: ", filesArray);
     let uploadArray = [];
     for(let x = 0; x < filesArray.length; x++) {
       let fileExtension = filesArray[x].fileName.split('.')[1];
@@ -170,12 +168,6 @@ class Upload extends Component {
     } else {
       return null;
     }
-
-    // if (!show) {
-    //   return null;
-    // }
-
-    console.log("Showing Upload Modal");
 
     return (
       <div className="modal-backdrop">
