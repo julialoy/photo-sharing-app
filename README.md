@@ -25,7 +25,7 @@ The following are the main frameworks/libraries that were used to create this ap
 
 ## Screenshots
 Photostream:
-
+![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6e3ba938-6038-482d-b4a6-0686af7c05ff)
 
 Selecting an individual photo brings up more information about that image:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/dc78bc74-2459-4196-a36e-4ede037aaaee)
@@ -35,7 +35,7 @@ Selecting an individual photo also allows editing that image's information:
 
 Both individual and batch uploads are supported:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6360e71a-0d4f-4033-a39b-d1b4e9b9d0ac)
-![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6e3ba938-6038-482d-b4a6-0686af7c05ff)
+
 
 The app is responsive and adapts based on device screen size:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/4a6e5dbf-6ab9-43b4-ae18-be234629de2d)
