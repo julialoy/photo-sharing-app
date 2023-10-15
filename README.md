@@ -33,10 +33,6 @@ Selecting an individual photo brings up more information about that image:
 Selecting an individual photo also allows editing that image's information:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6360e71a-0d4f-4033-a39b-d1b4e9b9d0ac)
 
-Both individual and batch uploads are supported:
-
-
-
 The app is responsive and adapts based on device screen size:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/4a6e5dbf-6ab9-43b4-ae18-be234629de2d)
 
