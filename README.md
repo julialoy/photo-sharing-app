@@ -39,7 +39,6 @@ Both individual and batch uploads are supported:
 
 The app is responsive and adapts based on device screen size:
 ![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/4a6e5dbf-6ab9-43b4-ae18-be234629de2d)
-![image](https://github.com/julialoy/photo-sharing-app/assets/19575905/6d3f5e59-5a84-400a-9dcc-dfb200c23324)
 
 ## License
 This project is licensed under the MIT License.
